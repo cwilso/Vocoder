@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Vocoder</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<!-- <link rel="shortcut icon" href="Speaker.ico"> -->
+
+<style>
+.panel {
+   width: 100%;
+   border: 1px solid black;
+   height: 200px;
+}
+.notready .sndurl { color: red }
+canvas {border: 1px solid blue}
+</style>
+
+<!-- Analyser Node library -->
+<script type="text/javascript" src="analyser.js"></script>
+
+<script type="text/javascript">
+var audioContext = null;
+var modulatorBuffer = null;
+var carrierBuffer = null;
+var modulatorNode = null;
+var carrierNode = null;
+
+function play() {
+	modulatorNode = audioContext.createBufferSource();
+	modulatorNode.buffer = modulatorBuffer;
+	
+	if (!modulatorAnalyser) {
+	 	modulatorAnalyser = audioContext.createAnalyser();
+		modulatorAnalyser.fftSize = 64;
+		modulator.smoothingTimeConstant = 0.0;
+		modulatorAnalyser.connect( audioContext.destination);
+	}
+	
+	modulatorNode.connect( modulatorAnalyser );
+	modulatorNode.noteOn(0);
+
+  	window.webkitRequestAnimationFrame( updateAnalysers );
+}
+
+function hitstop(e) {
+	e.target.parentNode.audioNode.noteOff(0);
+}
+
+function onAnalyserConnectInput() {
+	// set up 
+	if (!animationRunning) {
+		animationRunning = true;
+		updateAnalysers( 0 );
+	}
+}
+
+function createAnalyserNode() {
+	var e=createNewNode("analyser", true, true );
+	var analyser = audioContext.createAnalyser();
+	analyser.smoothingTimeConstant = "0.25"; // not much smoothing
+	e.audioNode = analyser;
+	var canvas = document.createElement( "canvas" );
+	canvas.style.left = "10px";
+	canvas.style.top = "35px";
+	canvas.style.position = "absolute";
+	canvas.height = "120";
+	canvas.width = "150";
+	canvas.className = "analyserCanvas"
+	canvas.style.webkitBoxReflect = "below 0px -webkit-gradient(linear, left top, left bottom, from(transparent), color-stop(0.9, transparent), to(white))"
+	
+	e.appendChild( canvas );
+	
+	e.onConnectInput = onAnalyserConnectInput;
+	analysers.push(e);	// Add to the list of analysers in the animation loop
+	e.drawingContext = canvas.getContext('2d');
+//	e.drawingContext.fillStyle = "blue";
+//	e.drawingContext.fillRect(0,0,150, 120);
+}
+
+function loadModulator( buffer ) {
+	modulatorBuffer = buffer;
+	var e = document.getElementById("modulator");
+	e.classList.remove("notready");  
+	e.classList.add("ready");
+}
+
+function loadCarrier( buffer ) {
+	carrierBuffer = buffer;
+	var e = document.getElementById("carrier");
+	e.classList.remove("notready");  
+	e.classList.add("ready");
+}
+
+function downloadAudioFromURL( url, cb ){
+	var request = new XMLHttpRequest();
+  	request.open('GET', url, true);
+  	request.responseType = 'arraybuffer';
+
+  	// Decode asynchronously
+  	request.onload = function() {
+    	audioContext.decodeAudioData( request.response, function(buffer) {
+      		cb(buffer);
+    	}, function(){alert("error loading!");});
+  	}
+  	request.send();
+}
+
+function startLoadingModulator( url ) {
+	modulatorBuffer = null;
+	var e = document.getElementById("modurl");
+	e.innerHTML = '"' + url + '"';
+	e = document.getElementById("modulator");
+	e.classList.remove("ready");  
+	e.classList.add("notready");
+	downloadAudioFromURL( url, loadModulator );
+}
+
+function startLoadingCarrier( url ) {
+	carrierBuffer = null;
+	var e = document.getElementById("carurl");
+	e.innerHTML = '"' + url + '"';
+	e = document.getElementById("carrier");
+	e.classList.remove("ready");  
+	e.classList.add("notready");
+	downloadAudioFromURL( url, loadCarrier );
+}
+
+// Set up the page as a drop site for audio files. When an audio file is
+// dropped on the page, it will be auto-loaded as an AudioBufferSourceNode.
+function initDragDropOfAudioFiles() {
+	window.ondragover = function () { this.className = 'hover'; return false; };
+	window.ondragend = function () { this.className = ''; return false; };
+	window.ondrop = function (e) {
+  		this.className = '';
+  		e.preventDefault();
+
+	  var reader = new FileReader();
+	  reader.onload = function (event) {
+	  	audioContext.decodeAudioData( event.target.result, function(buffer) {
+	    		createAudioNodeFromBuffer(buffer);
+	  	}, function(){alert("error loading!");} ); 
+
+	  };
+	  reader.onerror = function (event) {
+	    alert("Error: " + reader.error );
+	  };
+	  reader.readAsArrayBuffer(e.dataTransfer.files[0]);
+	  return false;
+	};	
+}
+
+// Initialization function for the page.
+function init() {
+  	try {
+    	audioContext = new webkitAudioContext();
+  	}
+  	catch(e) {
+    	alert('Web Audio API is not supported in this browser');
+  	}
+
+//	initDragDropOfAudioFiles();	// set up page as a drop site for audio files
+
+	modulatorCanvas = document.getElementById("mcanvas").getContext('2d');
+	carrierCanvas = document.getElementById("ccanvas").getContext('2d');
+
+	startLoadingModulator( "RightTrack.ogg" );
+	startLoadingCarrier( "Saw.ogg" );
+}
+
+window.addEventListener('load', init, false);
+
+</script>
+<style>
+
+</style>
+</head>
+
+<body>
+	<div class="panel notready" id="modulator">
+		<div class="headertext">Modulator: <span class="sndurl" id="modurl">No modulator file loaded.</span></div>
+		<canvas id="mcanvas" width=600 height=120></canvas>
+	</div>
+	<div class="panel notready" id="carrier">
+		<div class="headertext">Carrier: <span class="sndurl" id="carurl">No carrier file loaded.</span></div>
+		<canvas id="ccanvas" width=600 height=120></canvas>
+	</div>
+	<div class="panel" id="output">
+		<canvas id="ocanvas" width=600 height=120></canvas>
+	</div>
+	<button onclick="play();">Play</button>
+<!--
+	<button onclick="var uri=prompt('Enter a URL to a sound file'); if (uri) downloadAudioFromURL(uri); ">AudioBufferSource from URL</button>
+	<button onclick="downloadAudioFromURL('440Hz.ogg'); ">Sine Wave AudioBufferSource</button>
+<button onclick="var uri=prompt('Enter a URL to an impulse file'); if (uri) downloadImpulseFromURL(uri); ">Convolver from impulse file URL</button>
+-->
+
+</div>
+
+</body>
+</html>
