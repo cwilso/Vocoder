@@ -34,7 +34,7 @@ function updateAnalyser( analyserNode, drawContext ) {
     	drawContext.fillStyle = "hsl( " + Math.round((i*360)/numBars) + ", 100%, 50%)";
     	drawContext.fillRect(i * SPACER_WIDTH, CANVAS_HEIGHT, BAR_WIDTH, -magnitude);
 	}
-	console.log("\n" + analyserNode.frequencyBinCount);
+//	console.log("\n" + analyserNode.frequencyBinCount);
 }
 
 function updateAnalysers(time) {

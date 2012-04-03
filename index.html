@@ -31,13 +31,34 @@ function play() {
 	
 	if (!modulatorAnalyser) {
 	 	modulatorAnalyser = audioContext.createAnalyser();
-		modulatorAnalyser.fftSize = 64;
-		modulator.smoothingTimeConstant = 0.0;
+		modulatorAnalyser.fftSize = 128;
+		modulatorAnalyser.smoothingTimeConstant = 0.0;
 		modulatorAnalyser.connect( audioContext.destination);
 	}
 	
 	modulatorNode.connect( modulatorAnalyser );
+	
+	carrierNode = audioContext.createBufferSource();
+	carrierNode.buffer = carrierBuffer;
+	carrierNode.loop = true;
+	
+	if (!carrierAnalyser) {
+	 	carrierAnalyser = audioContext.createAnalyser();
+		carrierAnalyser.fftSize = 1024;
+		carrierAnalyser.smoothingTimeConstant = 0.0;
+		var gain = audioContext.createGainNode();
+		gain.gain.value = 0.0;	// mute it - still have to connect it to have it play
+		carrierAnalyser.connect( gain );
+		gain.connect( audioContext.destination);
+	}
+	
+	carrierNode.connect( carrierAnalyser );
+	
 	modulatorNode.noteOn(0);
+	carrierNode.noteOn(0);
+
+	//turn off the carrier loop when the modulator is done playing
+	carrierNode.noteOff(modulatorNode.buffer.duration); 
 
   	window.webkitRequestAnimationFrame( updateAnalysers );
 }
@@ -128,24 +149,31 @@ function startLoadingCarrier( url ) {
 // Set up the page as a drop site for audio files. When an audio file is
 // dropped on the page, it will be auto-loaded as an AudioBufferSourceNode.
 function initDragDropOfAudioFiles() {
-	window.ondragover = function () { this.className = 'hover'; return false; };
-	window.ondragend = function () { this.className = ''; return false; };
-	window.ondrop = function (e) {
-  		this.className = '';
+	var mod = document.getElementById("modulator");
+	
+	mod.ondragover = function () { this.classList.add("hover"); return false; };
+	mod.ondragend = function () { this.classList.remove("hover"); return false; };
+	mod.ondrop = function (e) {
+  		this.classList.remove("hover");
   		e.preventDefault();
+		modulatorBuffer = null;
+		var e = document.getElementById("modurl");
+		e.innerHTML = '"' + url + '"';
+		mod.classList.remove("ready");  
+		mod.classList.add("notready");
 
-	  var reader = new FileReader();
-	  reader.onload = function (event) {
-	  	audioContext.decodeAudioData( event.target.result, function(buffer) {
-	    		createAudioNodeFromBuffer(buffer);
-	  	}, function(){alert("error loading!");} ); 
+	  	var reader = new FileReader();
+	  	reader.onload = function (event) {
+	  		audioContext.decodeAudioData( event.target.result, function(buffer) {
+	    		loadModulator( buffer );
+	  		}, function(){alert("error loading!");} ); 
 
-	  };
-	  reader.onerror = function (event) {
-	    alert("Error: " + reader.error );
-	  };
-	  reader.readAsArrayBuffer(e.dataTransfer.files[0]);
-	  return false;
+	  	};
+	  	reader.onerror = function (event) {
+	  		alert("Error: " + reader.error );
+		};
+	  	reader.readAsArrayBuffer(e.dataTransfer.files[0]);
+	  	return false;
 	};	
 }
 
