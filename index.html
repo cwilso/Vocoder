@@ -27,12 +27,40 @@ var modulatorBuffer = null;
 var carrierBuffer = null;
 var modulatorNode = null;
 var carrierNode = null;
+var vocoding = false;
+
+function playModulatorOnly() {
+	modulatorNode = audioContext.createBufferSource();
+	modulatorNode.buffer = modulatorBuffer;
+	
+	vocoding = false;
+
+//	if (!modulatorAnalyser) {
+	 	modulatorAnalyser = audioContext.createAnalyser();
+		modulatorAnalyser.fftSize = 2048;
+		modulatorAnalyser.smoothingTimeConstant = 0.0;
+		var gain = audioContext.createGainNode();
+
+		// Initial gain value of modulator (speech) signal
+		gain.gain.value = 1.0;	
+		modulatorAnalyser.connect( gain );
+		gain.connect( audioContext.destination);
+//	}
+	
+	modulatorNode.connect( modulatorAnalyser );
+	
+	modulatorNode.noteOn(0);
+  	window.webkitRequestAnimationFrame( updateAnalysers );
+	window.setTimeout( cancelVocoderUpdates, modulatorNode.buffer.duration * 1000 + 20 );
+}
 
 function play() {
 	modulatorNode = audioContext.createBufferSource();
 	modulatorNode.buffer = modulatorBuffer;
 	
-	if (!modulatorAnalyser) {
+	vocoding = true;
+
+	//	if (!modulatorAnalyser) {
 	 	modulatorAnalyser = audioContext.createAnalyser();
 		modulatorAnalyser.fftSize = 2048;
 		modulatorAnalyser.smoothingTimeConstant = 0.0;
@@ -43,7 +71,7 @@ function play() {
 		gain.gain.value = 0.0;	
 		modulatorAnalyser.connect( gain );
 		gain.connect( audioContext.destination);
-	}
+//	}
 	
 	modulatorNode.connect( modulatorAnalyser );
 	
@@ -52,15 +80,15 @@ function play() {
 	carrierNode.loop = true;
 	carrierNode.gain.value = 0.2;
 
-	if (!carrierAnalyser) {
+//	if (!carrierAnalyser) {
 	 	carrierAnalyser = audioContext.createAnalyser();
-		carrierAnalyser.fftSize = 512;
+		carrierAnalyser.fftSize = 2048;
 		carrierAnalyser.smoothingTimeConstant = 0.0;
 		var gain = audioContext.createGainNode();
 		gain.gain.value = 0.0;	// mute it - still have to connect it to have it play
 		carrierAnalyser.connect( gain );
 		gain.connect( audioContext.destination);
-	}
+//	}
 
 	initBandpassFilters();
 	
@@ -73,7 +101,7 @@ function play() {
 	carrierNode.noteOff(modulatorNode.buffer.duration); 
 
   	window.webkitRequestAnimationFrame( updateAnalysers );
-	window.setTimeout( cancelVocoderUpdates, modulatorNode.buffer.duration * 1000 );
+	window.setTimeout( cancelVocoderUpdates, modulatorNode.buffer.duration * 1000 + 20 );
 	updateVocoderGainNodes();
 }
 
@@ -199,7 +227,8 @@ function init() {
 	vocoderCanvas = document.getElementById("vcanvas").getContext('2d');
 
 	startLoadingModulator( "RightTrack.ogg" );
-	startLoadingCarrier( "Saw.ogg" );
+	startLoadingCarrier( "Noise.ogg" );
+//	startLoadingCarrier( "Saw.ogg" );
 }
 
 window.addEventListener('load', init, false);
@@ -212,20 +241,20 @@ window.addEventListener('load', init, false);
 
 <body>
 	<div class="panel notready" id="modulator">
-		<div class="headertext">Modulator: <span class="sndurl" id="modurl">No modulator file loaded.</span><button onclick="play();">Play</button></div>
-		<canvas id="mcanvas" width=600 height=120></canvas>
+		<div class="headertext">Modulator: <span class="sndurl" id="modurl">No modulator file loaded.</span><button onclick="play();">Vocode</button><button onclick="playModulatorOnly();">Play source</button></div>
+		<canvas id="mcanvas" width=1200 height=120></canvas>
 	</div>
 	<div class="panel notready" id="carrier">
-		<div class="headertext">Carrier: <span class="sndurl" id="carurl">No carrier file loaded.</span></div>
-		<canvas id="ccanvas" width=600 height=120></canvas>
+		<div class="headertext">Carrier: <span class="sndurl" id="carurl">No carrier file loaded.</span><button onclick="startLoadingCarrier( 'Saw.ogg' );">Sawtooth</button><button onclick="startLoadingCarrier( 'Noise.ogg' );">Noise</button></div>
+		<canvas id="ccanvas" width=1200 height=120></canvas>
 	</div>
 	<div class="panel" id="output">
 		<div class="headertext">Output</div>
-		<canvas id="ocanvas" width=600 height=120></canvas>
+		<canvas id="ocanvas" width=1200 height=120></canvas>
 	</div>
 	<div class="panel" id="vocoder">
 		<div class="headertext">Vocoder Bands</div>
-		<canvas id="vcanvas" width=600 height=120></canvas>
+		<canvas id="vcanvas" width=1200 height=120></canvas>
 	</div>
 	
 <!--

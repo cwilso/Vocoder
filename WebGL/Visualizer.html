@@ -1,0 +1,162 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!-- saved from url=(0073)http://chromium.googlecode.com/svn/trunk/samples/audio/visualizer-gl.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<title>
+Title
+</title>
+
+<!--
+<link rel="stylesheet" type="text/css" href = "simple.css" />
+-->
+
+<!-- Slider stuff -->
+<script type="text/javascript" src="./Visualizer_files/events.js"></script>
+
+
+
+
+<style type="text/css">
+  #slider { margin: 10px; }
+</style>
+
+<!-- WebGL stuff -->
+<script src="./Visualizer_files/base.js"></script>
+<script src="./Visualizer_files/cameracontroller.js"></script>
+
+<!-- TODO(kbr): remove this dependency -->
+<script src="./Visualizer_files/matrix4x4.js"></script>
+
+<!-- Visualizer GL library -->
+<script type="text/javascript" src="./Visualizer_files/visualizer.js"></script>
+
+<!-- Our javascript code -->
+<script type="text/javascript">
+
+o3djs.require('o3djs.shader');
+
+function output(str) {
+    console.log(str);
+}
+
+// Events
+// init() once the page has finished loading.
+window.onload = init;
+
+var context;
+var source;
+var analyser;
+var buffer;
+var audioBuffer;
+
+var analyserView1;
+var analyserView2;
+
+function init() {
+    analyserView1 = new AnalyserView("view1");
+    // analyserView2 = new AnalyserView("view2");
+
+    initAudio();
+    analyserView1.initByteBuffer();
+    // analyserView2.initByteBuffer();
+    
+    // analyserView2.setAnalysisType(ANALYSISTYPE_FREQUENCY);
+}
+
+function loadAudioBuffer(url) {
+    // Load asynchronously
+
+    var request = new XMLHttpRequest();
+    request.open("GET", url, true);
+    request.responseType = "arraybuffer";
+
+    request.onload = function() { 
+        audioBuffer = context.createBuffer(request.response, false /*true*/);
+        finishLoad();  // add in the slider, etc. now that we've loaded the audio
+    }
+
+    request.send();
+}
+
+function initAudio() {
+    context = new webkitAudioContext();
+    
+    source = context.createBufferSource();
+    analyser = context.createAnalyser();
+    analyser.fftSize = 2048;
+
+    // Connect audio processing graph
+    source.connect(analyser);
+    analyser.connect(context.destination);
+
+    loadAudioBuffer("sounds/hyper-reality/human-voice.mp4");
+}
+
+if ( !window.requestAnimationFrame ) {
+
+        window.requestAnimationFrame = ( function() {
+
+                return window.webkitRequestAnimationFrame ||
+                window.mozRequestAnimationFrame || // comment out if FF4 is slow (it caps framerate at ~30fps: https://bugzilla.mozilla.org/show_bug.cgi?id=630127)
+                window.oRequestAnimationFrame ||
+                window.msRequestAnimationFrame ||
+                function( /* function FrameRequestCallback */ callback, /* DOMElement Element */ element ) {
+
+                        window.setTimeout( callback, 1000 / 60 );
+
+                };
+
+        } )();
+
+}
+
+function draw() {
+    analyserView1.doFrequencyAnalysis();
+    window.requestAnimationFrame(draw);
+}
+
+function finishLoad() {
+    source.buffer = audioBuffer;
+    source.looping = true;
+
+    source.noteOn(0.0);
+    
+    window.requestAnimationFrame(draw);
+}
+
+
+</script><script type="text/javascript" src="./Visualizer_files/shader.js"></script>
+
+<script>function notifyScript() {     var evt = document.createEvent("Event");     evt.initEvent("notify", false, false);     if (document.getElementById("addthis-extension-script") == null) {        var d=document.createElement("div"); d.setAttribute("style", "display:none"); d.setAttribute("id", "addthis-extension-script");         if (window._ate)             d.textContent=_ate.pub();         else if(window.addthis_config && addthis_config.pubid)          d.textContent= addthis_config.pubid;        else if(window.addthis_config && addthis_config.username)          d.textContent= addthis_config.username;        else if(window.addthis_pub)          d.textContent= addthis_pub;        else             d.textContent="";         document.body.appendChild(d);     }    document.documentElement.dispatchEvent(evt); }notifyScript()</script></head>
+
+<body>
+
+<!-- Canvas tag for WebGL output -->
+
+<!--
+<canvas id="view1" width="1280px" height="800px"></canvas>
+<canvas id="view2" width="1280px" height="800px"></canvas>
+-->
+
+<canvas id="view1" width="1280px" height="800px"></canvas>
+
+<!--
+<canvas id="view2" width="640px" height="400px"></canvas>
+-->
+
+<!-- Sliders and other controls will be added here -->
+<div id="controls"> </div>
+
+<!-- Analyser type -->
+<input type="radio" name="radioSet" value="data" onmousedown="analyserView1.setAnalysisType(ANALYSISTYPE_FREQUENCY);">
+Frequency
+<input type="radio" name="radioSet" value="data" onmousedown="analyserView1.setAnalysisType(ANALYSISTYPE_SONOGRAM);">
+Sonogram
+<input type="radio" name="radioSet" value="data" checked="checked" onmousedown="analyserView1.setAnalysisType(ANALYSISTYPE_3D_SONOGRAM);">
+3D Sonogram
+<input type="radio" name="radioSet" value="data" onmousedown="analyserView1.setAnalysisType(ANALYSISTYPE_WAVEFORM);">
+Waveform
+
+
+
+<div style="display:none" id="addthis-extension-script"></div></body></html>
