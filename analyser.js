@@ -1,20 +1,21 @@
 var CANVAS_WIDTH = 2000;
 var CANVAS_HEIGHT = 120;
 
-var FILTER_QUALITY = 4.2;	// The Q value for the carrier and modulator filters
+var FILTER_QUALITY = 20;  // 4.2;	// The Q value for the carrier and modulator filters
 
 var animationRunning = false;
 var modulatorAnalyser = null;
 var carrierAnalyser = null;
 var outputAnalyser = null;
 
-var filterBands = null;		// tuned bandpass filters
-var filterPostGains = null;	// post-filter gains.
+var modFilterBands = null;		// tuned bandpass filters
+var modFilterPostGains = null;	// post-filter gains.
 var heterodynes = null;		// gain nodes used to multiply bandpass X sine
 var powers = null;			// gain nodes used to multiply prev out by itself
 var lpFilters = null;		// tuned LP filters to remove doubled copy of product
-var carrierBands = null;	// 
-var carrierBandGains = null;
+var carrierBands = null;	// tuned bandpass filters, same as modFilterBands but in carrier chain
+var carrierFilterPostGains = null;	// post-bandpass gain adjustment
+var carrierBandGains = null;	// these are the "control gains" driven by the lpFilters
 
 var modulatorCanvas = null;
 var carrierCanvas = null;
@@ -45,6 +46,9 @@ var numVocoderBands = 16;
 // this function will algorithmically re-calculate vocoder bands, distributing evenly
 // from startFreq to endFreq, splitting evenly (logarhythmically) into a given numBands.
 // The function places this info into the global vocoderBands and numVocoderBands variables.
+var newVocoderBands = null;
+var numNewVocoderBands = 0;
+
 function generateVocoderBands( startFreq, endFreq, numBands ) {
 	// Remember: 1200 cents in octave, 100 cents per semitone
 
@@ -52,17 +56,19 @@ function generateVocoderBands( startFreq, endFreq, numBands ) {
 	var centsPerBand = totalRangeInCents / numBands;
 	var scale = Math.pow( 2, centsPerBand / 1200 );  // This is the scaling for successive bands
 
-	vocoderBands = new Array();
+	newVocoderBands = new Array();
 	var currentFreq = startFreq;
 
-	for (var i=0; i<nBands; i++) {
-		vocoderBands[i] = new Object();
-		vocoderBands[i].frequency = currentFreq;
+	for (var i=0; i<numBands; i++) {
+		newVocoderBands[i] = new Object();
+		newVocoderBands[i].frequency = currentFreq;
 		currentFreq = currentFreq * scale;
 	}
 
-	numVocoderBands = numBands;
+	numNewVocoderBands = numBands;
 }
+
+generateVocoderBands( 55, 7040, 30 );
 
 /*  Moog vocoder bands - these are the boundaries between bands, not the bands' center freqs.
 50 		
@@ -100,7 +106,7 @@ function initBandpassFilters() {
 	}
 
 /*
-	filterBands = null;		// tuned bandpass filters
+	modFilterBands = null;		// tuned bandpass filters
 	multipliers = null;		// gain nodes used to multiply bandpass X sine
 	heterodynes = null;		// gain nodes used to multiply prev out by itself
 	lpFilters = null;		// tuned LP filters to remove doubled copy of product
@@ -108,11 +114,11 @@ function initBandpassFilters() {
 	carrierGains = null;	// gains on carrier bandpass filters
 */
 
-	if (filterBands == null)
-		filterBands = new Array();
+	if (modFilterBands == null)
+		modFilterBands = new Array();
 
-	if (filterPostGains == null)
-		filterPostGains = new Array();
+	if (modFilterPostGains == null)
+		modFilterPostGains = new Array();
 
 	if (heterodynes == null)
 		heterodynes = new Array();
@@ -125,7 +131,10 @@ function initBandpassFilters() {
 	
 	if (carrierBands == null)
 		carrierBands = new Array();
-	
+
+	if (carrierFilterPostGains == null)
+		carrierFilterPostGains = new Array();
+
 	if (carrierBandGains == null)
 		carrierBandGains = new Array();
 
@@ -150,13 +159,15 @@ function initBandpassFilters() {
 	hpFilterGain.connect( audioContext.destination );
 
 	//clear the arrays
-	filterBands.length = 0;
-	filterPostGains.length = 0;
+	modFilterBands.length = 0;
+	modFilterPostGains.length = 0;
 	heterodynes.length = 0;
 	powers.length = 0;
 	lpFilters.length = 0;
 	carrierBands.length = 0;
+	carrierFilterPostGains.length = 0;
 	carrierBandGains.length = 0;
+
 
 //	modulatorNode.connect( analyser1 );
 
@@ -167,13 +178,14 @@ function initBandpassFilters() {
 		modulatorFilter.type = modulatorFilter.BANDPASS;	// Bandpass filter
 		modulatorFilter.frequency.value = vocoderBands[i].frequency;
 		modulatorFilter.Q.value = FILTER_QUALITY; // 	initial quality
-		filterBands.push( modulatorFilter );
 		modulatorNode.connect( modulatorFilter );
+		modFilterBands.push( modulatorFilter );
 
 		// create a post-filtering gain to bump the levels up.
 		var modulatorFilterPostGain = audioContext.createGainNode();
-		modulatorFilterPostGain.gain.value = 2.5;
+		modulatorFilterPostGain.gain.value = 4;
 		modulatorFilter.connect( modulatorFilterPostGain );
+		modFilterPostGains.push( modulatorFilterPostGain );
 
 		// Create the sine oscillator for the heterodyne
 		var heterodyneOscillator = audioContext.createOscillator();
@@ -182,7 +194,6 @@ function initBandpassFilters() {
 
 		// Create the node to multiply the sine by the modulator
 		var heterodyne = audioContext.createGainNode();
-
 		modulatorFilterPostGain.connect( heterodyne );
 		heterodyneOscillator.connect( heterodyne.gain );
 
@@ -222,8 +233,9 @@ function initBandpassFilters() {
 		carrierNode.connect( carrierFilter );
 
 		var carrierFilterPostGain = audioContext.createGainNode();
-		carrierFilterPostGain.gain.value = 1.0;		// GUESS:  boost
+		carrierFilterPostGain.gain.value = 6.0;
 		carrierFilter.connect( carrierFilterPostGain );
+		carrierFilterPostGains.push( carrierFilterPostGain );
 
 		// Create the carrier band gain node
 		var bandGain = audioContext.createGainNode();
@@ -241,13 +253,15 @@ function initBandpassFilters() {
 		if ( i == DEBUG_BAND ) {
 //			modulatorFilterPostGain.connect( carrierAnalyser );
 
-			modulatorNode.connect( analyser2 );
-			modulatorFilterPostGain.connect( analyser1 );
+			modulatorNode.connect( analyser1 );
+			modulatorFilterPostGain.connect( analyser2 );
 		}
 	}
 
-		addSlider( "mod filter Q", filterBands[0].Q.value, 1.0, 100.0, filterBands, updateQs );
+		addSlider( "mod filter Q", modFilterBands[0].Q.value, 1.0, 100.0, modFilterBands, updateQs );
+		addSlider( "mod filter post gain", modFilterPostGains[0].gain.value, 1.0, 100.0, modFilterPostGains, updateGains );
 		addSlider( "carrier filter Q", carrierBands[0].Q.value, 1.0, 100.0, carrierBands, updateQs );
+		addSlider( "carrier filter post gain", carrierFilterPostGains[0].gain.value, 1.0, 100.0, carrierFilterPostGains, updateGains );
 		addSlider( "heterodyne post gain", heterodynes[0].gain.value, 1.0, 8.0, heterodynes, updateGains );
 
 
