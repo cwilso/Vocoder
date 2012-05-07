@@ -223,7 +223,7 @@ AnalyserView.prototype.initGL = function() {
     this.sonogram3DShader = o3djs.shader.loadFromURL(gl, "shaders/sonogram-vertex.shader", "shaders/sonogram-fragment.shader");
 }
 
-AnalyserView.prototype.initByteBuffer = function() {
+AnalyserView.prototype.initByteBuffer = function( analyser ) {
     var gl = this.gl;
     var TEXTURE_HEIGHT = this.TEXTURE_HEIGHT;
     
@@ -263,7 +263,7 @@ AnalyserView.prototype.analysisType = function() {
 }
 
 
-AnalyserView.prototype.doFrequencyAnalysis = function(event) {
+AnalyserView.prototype.doFrequencyAnalysis = function( analyser ) {
     var freqByteData = this.freqByteData;
     
     switch(this.analysisType) {

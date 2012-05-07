@@ -10,11 +10,8 @@ Title
 <link rel="stylesheet" type="text/css" href = "simple.css" />
 -->
 
-<!-- Slider stuff -->
+<!-- Visualizer stuff -->
 <script type="text/javascript" src="./Visualizer_files/events.js"></script>
-
-
-
 
 <style type="text/css">
   #slider { margin: 10px; }
@@ -127,26 +124,14 @@ function finishLoad() {
 
 </script><script type="text/javascript" src="./Visualizer_files/shader.js"></script>
 
-<script>function notifyScript() {     var evt = document.createEvent("Event");     evt.initEvent("notify", false, false);     if (document.getElementById("addthis-extension-script") == null) {        var d=document.createElement("div"); d.setAttribute("style", "display:none"); d.setAttribute("id", "addthis-extension-script");         if (window._ate)             d.textContent=_ate.pub();         else if(window.addthis_config && addthis_config.pubid)          d.textContent= addthis_config.pubid;        else if(window.addthis_config && addthis_config.username)          d.textContent= addthis_config.username;        else if(window.addthis_pub)          d.textContent= addthis_pub;        else             d.textContent="";         document.body.appendChild(d);     }    document.documentElement.dispatchEvent(evt); }notifyScript()</script></head>
+
+</head>
 
 <body>
 
-<!-- Canvas tag for WebGL output -->
 
-<!--
-<canvas id="view1" width="1280px" height="800px"></canvas>
-<canvas id="view2" width="1280px" height="800px"></canvas>
--->
-
-<canvas id="view1" width="1280px" height="800px"></canvas>
-
-<!--
-<canvas id="view2" width="640px" height="400px"></canvas>
--->
-
-<!-- Sliders and other controls will be added here -->
-<div id="controls"> </div>
-
+<!-- Debugging analyser -->
+<div id="controls">
 <!-- Analyser type -->
 <input type="radio" name="radioSet" value="data" onmousedown="analyserView1.setAnalysisType(ANALYSISTYPE_FREQUENCY);">
 Frequency
@@ -156,7 +141,10 @@ Sonogram
 3D Sonogram
 <input type="radio" name="radioSet" value="data" onmousedown="analyserView1.setAnalysisType(ANALYSISTYPE_WAVEFORM);">
 Waveform
+</div>
 
+<!-- Canvas tag for WebGL output -->
+<canvas id="view1" width="1280px" height="400px"></canvas>
 
 
 <div style="display:none" id="addthis-extension-script"></div></body></html>

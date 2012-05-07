@@ -9,7 +9,7 @@
 .panel {
    width: 100%;
    border: 1px solid black;
-   height: 145px;
+   aheight: 145px;
 }
 .hover {
 	border: 5px solid red;
@@ -21,6 +21,25 @@ canvas { aborder: 1px solid blue}
 <!-- Analyser Node library -->
 <script type="text/javascript" src="analyser.js"></script>
 
+<!-- WaveShaper library -->
+<script type="text/javascript" src="waveshaper.js"></script>
+
+<!-- Debug visualizer stuff begin -->
+<!-- Visualizer stuff -->
+<script type="text/javascript" src="./Visualizer_files/events.js"></script>
+
+<!-- WebGL stuff -->
+<script src="./Visualizer_files/base.js"></script>
+<script src="./Visualizer_files/cameracontroller.js"></script>
+
+<!-- TODO(kbr): remove this dependency -->
+<script src="./Visualizer_files/matrix4x4.js"></script>
+
+<!-- Visualizer GL library -->
+<script type="text/javascript" src="./Visualizer_files/visualizer.js"></script>
+<script type="text/javascript" src="./Visualizer_files/shader.js"></script>
+<!--  Debug visualizer stuff end -->
+
 <script type="text/javascript">
 var audioContext = null;
 var modulatorBuffer = null;
@@ -29,22 +48,29 @@ var modulatorNode = null;
 var carrierNode = null;
 var vocoding = false;
 
+
+// Debug visualizer stuff here
+var analyser1;
+var analyser2;
+var analyserView1;
+var analyserView2;
+
+o3djs.require('o3djs.shader');
+
+
+
+
 function playModulatorOnly() {
+	clearSliders();
 	modulatorNode = audioContext.createBufferSource();
 	modulatorNode.buffer = modulatorBuffer;
 	
 	vocoding = false;
+ 	modulatorAnalyser = audioContext.createAnalyser();
+	modulatorAnalyser.fftSize = 2048;
+	modulatorAnalyser.smoothingTimeConstant = 0.0;
 
-//	if (!modulatorAnalyser) {
-	 	modulatorAnalyser = audioContext.createAnalyser();
-		modulatorAnalyser.fftSize = 2048;
-		modulatorAnalyser.smoothingTimeConstant = 0.0;
-		var gain = audioContext.createGainNode();
-
-		// Initial gain value of modulator (speech) signal
-		gain.gain.value = 1.0;	
-		modulatorAnalyser.connect( gain );
-		gain.connect( audioContext.destination);
+		modulatorAnalyser.connect( audioContext.destination);
 //	}
 	
 	modulatorNode.connect( modulatorAnalyser );
@@ -54,45 +80,111 @@ function playModulatorOnly() {
 	window.setTimeout( cancelVocoderUpdates, modulatorNode.buffer.duration * 1000 + 20 );
 }
 
-function play() {
+function stop() {
+	clearSliders();
+	if (modulatorNode)
+		modulatorNode.noteOff(0);
+	if (vocoding) {
+		carrierNode.noteOff(0);
+		vocoding = false;
+	}
+	window.webkitCancelAnimationFrame( rafID );
+}
+
+// This is used as a muted output node - right now, analysers and other nodes need to be connected.
+var zerogain = null;
+
+function updateSingleGain( event ) {
+	var t = event.target;
+	var value = t.value;
+	t.audioNode.gain.value = value;
+
+	//update the numeric display
+	t.parentNode.childNodes[2].textContent = value;
+}
+
+function updateSingleFrequency( event ) {
+	var t = event.target;
+	var value = t.value;
+	t.audioNode.frequency.value = value;
+
+	//update the numeric display
+	t.parentNode.childNodes[2].textContent = value;
+}
+
+function updateSingleQ( event ) {
+	var t = event.target;
+	var value = t.value;
+	t.audioNode.Q.value = value;
+
+	//update the numeric display
+	t.parentNode.childNodes[2].textContent = value;
+}
+
+function updateGains( event ) {
+	var t = event.target;
+	var value = t.value;
+	for (var i=0; i<numVocoderBands; i++)
+		t.audioNodes[i].gain.value = value;
+
+	//update the numeric display
+	t.parentNode.childNodes[2].textContent = value;
+}
+
+function updateQs( event ) {
+	var t = event.target;
+	var value = t.value;
+	for (var i=0; i<numVocoderBands; i++)
+		t.audioNodes[i].Q.value = value;
+
+	//update the numeric display
+	t.parentNode.childNodes[2].textContent = value;
+}
+
+
+function setupVocoderGraph() {
+	clearSliders();
 	modulatorNode = audioContext.createBufferSource();
 	modulatorNode.buffer = modulatorBuffer;
 	
 	vocoding = true;
 
-	//	if (!modulatorAnalyser) {
-	 	modulatorAnalyser = audioContext.createAnalyser();
-		modulatorAnalyser.fftSize = 2048;
-		modulatorAnalyser.smoothingTimeConstant = 0.0;
-		var gain = audioContext.createGainNode();
+ 	modulatorAnalyser = audioContext.createAnalyser();
+	modulatorAnalyser.fftSize = 2048;
+	modulatorAnalyser.smoothingTimeConstant = 0.0;
+	modulatorAnalyser.connect( zerogain );
 
-		// Initial gain value of modulator (speech) signal
-		// change to mute this eventually - still have to connect it to have it play
-		gain.gain.value = 0.0;	
-		modulatorAnalyser.connect( gain );
-		gain.connect( audioContext.destination);
-//	}
-	
-	modulatorNode.connect( modulatorAnalyser );
+	var modulatorPreAnalyserGain = audioContext.createGainNode();
+	modulatorPreAnalyserGain.gain.value = 0.15;
+	modulatorPreAnalyserGain.connect( modulatorAnalyser);
+	modulatorNode.connect( modulatorPreAnalyserGain );
 	
 	carrierNode = audioContext.createBufferSource();
 	carrierNode.buffer = carrierBuffer;
 	carrierNode.loop = true;
-	carrierNode.gain.value = 0.2;
+	carrierNode.gain.value = 1.0;
 
-//	if (!carrierAnalyser) {
-	 	carrierAnalyser = audioContext.createAnalyser();
-		carrierAnalyser.fftSize = 2048;
-		carrierAnalyser.smoothingTimeConstant = 0.0;
-		var gain = audioContext.createGainNode();
-		gain.gain.value = 0.0;	// mute it - still have to connect it to have it play
-		carrierAnalyser.connect( gain );
-		gain.connect( audioContext.destination);
-//	}
+ 	carrierAnalyser = audioContext.createAnalyser();
+	carrierAnalyser.fftSize = 2048;
+	carrierAnalyser.smoothingTimeConstant = 0.0;
+	carrierAnalyser.connect( zerogain );
+
+	var carrierPreAnalyserGain = audioContext.createGainNode();
+	carrierPreAnalyserGain.gain.value = 0.1;
+	carrierNode.connect( carrierPreAnalyserGain );
+	carrierPreAnalyserGain.connect( carrierAnalyser);
+
+ 	outputAnalyser = audioContext.createAnalyser();
+	outputAnalyser.fftSize = 2048;
+	outputAnalyser.smoothingTimeConstant = 0.0;
+	outputAnalyser.connect( zerogain );
 
 	initBandpassFilters();
 	
-	carrierNode.connect( carrierAnalyser );
+//	carrierNode.connect( carrierAnalyser );
+}
+
+function play() {
 	
 	modulatorNode.noteOn(0);
 	carrierNode.noteOn(0);
@@ -102,7 +194,7 @@ function play() {
 
   	window.webkitRequestAnimationFrame( updateAnalysers );
 	window.setTimeout( cancelVocoderUpdates, modulatorNode.buffer.duration * 1000 + 20 );
-	updateVocoderGainNodes();
+//	updateVocoderGainNodes();
 }
 
 function loadModulator( buffer ) {
@@ -110,6 +202,9 @@ function loadModulator( buffer ) {
 	var e = document.getElementById("modulator");
 	e.classList.remove("notready");  
 	e.classList.add("ready");
+
+	if ( !document.getElementById("carrier").classList.contains("notready") )
+		ready();
 }
 
 function loadCarrier( buffer ) {
@@ -117,6 +212,9 @@ function loadCarrier( buffer ) {
 	var e = document.getElementById("carrier");
 	e.classList.remove("notready");  
 	e.classList.add("ready");
+
+	if ( !document.getElementById("modulator").classList.contains("notready") )
+		ready();
 }
 
 function downloadAudioFromURL( url, cb ){
@@ -210,6 +308,56 @@ function initDragDropOfAudioFiles() {
 	};	
 }
 
+function clearSliders() {
+	var sliders = document.getElementById("sliders");
+	var child;
+
+	for (child=sliders.firstChild; child; child=sliders.firstChild)
+		sliders.removeChild( child );
+}
+
+function addSlider( label, defaultValue, minValue, maxValue, nodeArray, onChange ) {
+	// insert a range control
+	// <input type="range" id="rangeEl" value="0.5" oninput="alert(this.value);" min="0.0" max="1.0" step="0.01">
+	var div = document.createElement("div");
+	div.appendChild(document.createTextNode(label));
+	var ctl = document.createElement("input");
+	ctl.type = "range";
+	ctl.min = minValue;
+	ctl.max = maxValue;
+	ctl.step = (maxValue - minValue) / 1000.0;
+	ctl.value = defaultValue;
+	ctl.oninput = onChange;
+	ctl.audioNodes = nodeArray;
+	ctl.label = label;
+	div.appendChild(ctl);
+	div.appendChild(document.createTextNode(defaultValue));
+	document.getElementById("sliders").appendChild(div);
+}
+
+function addSingleValueSlider( label, defaultValue, minValue, maxValue, node, onChange ) {
+	// insert a range control
+	// <input type="range" id="rangeEl" value="0.5" oninput="alert(this.value);" min="0.0" max="1.0" step="0.01">
+	var div = document.createElement("div");
+	div.appendChild(document.createTextNode(label));
+	var ctl = document.createElement("input");
+	ctl.type = "range";
+	ctl.min = minValue;
+	ctl.max = maxValue;
+	ctl.step = (maxValue - minValue) / 1000.0;
+	ctl.value = defaultValue;
+	ctl.oninput = onChange;
+	ctl.audioNode = node;
+	ctl.label = label;
+	div.appendChild(ctl);
+	div.appendChild(document.createTextNode(defaultValue));
+	document.getElementById("sliders").appendChild(div);
+}
+
+function ready() {
+	setupVocoderGraph();
+}
+
 // Initialization function for the page.
 function init() {
   	try {
@@ -226,42 +374,115 @@ function init() {
 	outputCanvas = document.getElementById("ocanvas").getContext('2d');
 	vocoderCanvas = document.getElementById("vcanvas").getContext('2d');
 
-	startLoadingModulator( "RightTrack.ogg" );
+//	startLoadingModulator( "RightTrack.ogg" );
+//	startLoadingModulator( "human-voice.mp4" );
+	startLoadingModulator( "fightclub.ogg" );
+//	startLoadingCarrier( "sawz2.ogg" );
 	startLoadingCarrier( "Noise.ogg" );
 //	startLoadingCarrier( "Saw.ogg" );
+
+	// set up the zero gain node
+	zerogain = audioContext.createGainNode();
+	zerogain.gain.value = 0.0;	
+	zerogain.connect( audioContext.destination);
+ 
+	// Debug visualizer
+    analyser1 = audioContext.createAnalyser();
+    analyser1.fftSize = 2048;
+    analyser2 = audioContext.createAnalyser();
+    analyser2.fftSize = 2048;
+
+    // Connect the analysers to a zeroed gain node so it will play
+    analyser1.connect( zerogain );
+    analyser2.connect( zerogain );
+
+    analyserView1 = new AnalyserView("view1");
+    analyserView1.initByteBuffer( analyser1 );
+    analyserView2 = new AnalyserView("view2");
+    analyserView2.initByteBuffer( analyser2 );
 }
 
-window.addEventListener('load', init, false);
+function keyevent( event ) {
+	if (event)
+		return;
+}
+
+window.onload=init;
+window.onkeydown=keyevent();
 
 </script>
+
+
+
+
+
+
+
+
 <style>
 
 </style>
 </head>
 
 <body>
+	<div id="sliders"></div>
 	<div class="panel notready" id="modulator">
-		<div class="headertext">Modulator: <span class="sndurl" id="modurl">No modulator file loaded.</span><button onclick="play();">Vocode</button><button onclick="playModulatorOnly();">Play source</button></div>
-		<canvas id="mcanvas" width=1200 height=120></canvas>
+		<div class="headertext">Modulator: <span class="sndurl" id="modurl">No modulator file loaded.</span>
+			<button onclick="play();">Vocode</button>
+			<button onclick="playModulatorOnly();">Play source</button>
+			<button onclick="stop();">Stop</button>
+		</div>
+		<canvas id="mcanvas" style="display:none" width=1200 height=120></canvas>
 	</div>
 	<div class="panel notready" id="carrier">
 		<div class="headertext">Carrier: <span class="sndurl" id="carurl">No carrier file loaded.</span><button onclick="startLoadingCarrier( 'Saw.ogg' );">Sawtooth</button><button onclick="startLoadingCarrier( 'Noise.ogg' );">Noise</button></div>
-		<canvas id="ccanvas" width=1200 height=120></canvas>
-	</div>
+		<canvas id="ccanvas" style="display:none" width=1200 height=120></canvas>
 	<div class="panel" id="output">
 		<div class="headertext">Output</div>
-		<canvas id="ocanvas" width=1200 height=120></canvas>
+		<canvas id="ocanvas" style="display:none" width=1200 height=120></canvas>
 	</div>
-	<div class="panel" id="vocoder">
+	<div class="panel" id="vocoder" >
 		<div class="headertext">Vocoder Bands</div>
 		<canvas id="vcanvas" width=1200 height=120></canvas>
 	</div>
-	
-<!--
-	<button onclick="var uri=prompt('Enter a URL to a sound file'); if (uri) downloadAudioFromURL(uri); ">AudioBufferSource from URL</button>
-	<button onclick="downloadAudioFromURL('440Hz.ogg'); ">Sine Wave AudioBufferSource</button>
-<button onclick="var uri=prompt('Enter a URL to an impulse file'); if (uri) downloadImpulseFromURL(uri); ">Convolver from impulse file URL</button>
--->
+
+
+	<!-- Debugging analyser -->
+<div id="controls">
+<!-- Analyser type -->
+<input type="radio" name="radioSet" value="data" 
+	onmousedown="analyserView1.setAnalysisType(ANALYSISTYPE_FREQUENCY); analyserView2.setAnalysisType(ANALYSISTYPE_FREQUENCY);">Frequency
+<input type="radio" name="radioSet" value="data" 
+	onmousedown="analyserView1.setAnalysisType(ANALYSISTYPE_SONOGRAM); analyserView2.setAnalysisType(ANALYSISTYPE_SONOGRAM);">Sonogram
+<input type="radio" name="radioSet" value="data" checked="checked" 
+	onmousedown="analyserView1.setAnalysisType(ANALYSISTYPE_3D_SONOGRAM); analyserView2.setAnalysisType(ANALYSISTYPE_3D_SONOGRAM);">3D Sonogram
+<input type="radio" name="radioSet" value="data" 
+	onmousedown="analyserView1.setAnalysisType(ANALYSISTYPE_WAVEFORM); analyserView2.setAnalysisType(ANALYSISTYPE_WAVEFORM);">Waveform
+<select onselect="alert('select:' + this.target.value);">
+	<option value="0">0</option>
+	<option value="1">1</option>
+	<option value="2">2</option>
+	<option value="3">3</option>
+	<option value="4">4</option>
+	<option value="5">5</option>
+	<option value="6">6</option>
+	<option value="7">7</option>
+	<option value="8">8</option>
+	<option value="9">9</option>
+	<option value="10">10</option>
+	<option value="11">11</option>
+	<option value="12">12</option>
+	<option value="13">13</option>
+	<option value="14">14</option>
+	<option value="15">15</option>
+</select>
+</div>
+<!-- Canvas tag for WebGL output -->
+<canvas id="view1" width="1280px" height="200px"></canvas>
+<canvas id="view2" width="1280px" height="200px"></canvas>
+
+
+	</div>
 
 </div>
 
