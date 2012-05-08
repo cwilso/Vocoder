@@ -247,21 +247,21 @@ function initBandpassFilters() {
 		waveshaper.connect( bandGain.gain );	// connect the lp controller
 
 		bandGain.connect( audioContext.destination );
-		bandGain.connect( outputAnalyser );
 
 		// show the output
-//		bandGain.connect( analyser2 );
+		bandGain.connect( analyser2 );
+		analyserView2.setOverlayText( "Output" );
 
 		// Debugging visualizer
 		if ( i == DEBUG_BAND ) {
 //			modulatorFilterPostGain.connect( carrierAnalyser );
 
-			carrierFilterPostGain.connect( analyser1 );
-			analyserView1.setOverlayText( "carrierFilterPostGain" );
-//			heterodynePostGain.connect( analyser2 );
-//			analyserView2.setOverlayText( "heterodyne post gain" );
-			lpFilterPostGain.connect( analyser2 );
-			analyserView2.setOverlayText( "lpFilterPostGain" );
+			heterodynePostGain.connect( outputAnalyser );
+
+//			carrierFilterPostGain.connect( analyser1 );
+//			analyserView1.setOverlayText( "carrierFilterPostGain" );
+//			lpFilterPostGain.connect( analyser2 );
+//			analyserView2.setOverlayText( "lpFilterPostGain" );
 		}
 	}
 
@@ -275,10 +275,8 @@ function initBandpassFilters() {
 	addColumnSlider( "carrier filter Q", carrierBands[0].Q.value, 1.0, 100.0, carrierBands, updateQs );
 	addColumnSlider( "carrier filter post gain", carrierFilterPostGains[0].gain.value, 1.0, 20.0, carrierFilterPostGains, updateGains );
 
-		lpFilter.frequency.value = 5.0;	// Guesstimate!  Mask off 20Hz and above.
-		lpFilter.Q.value = 1;	// don't need a peak
-
-
+	modulatorInput.connect( analyser1 );
+	analyserView1.setOverlayText( "modulatorInput" );
 }
 
 

@@ -139,7 +139,6 @@ function loadCarrier( buffer ) {
 		newCarrierNode.buffer = carrierBuffer;
 		newCarrierNode.loop = true;
 		newCarrierNode.connect( carrierInput );
-//		newCarrierNode.connect( carrierPreAnalyserGain );
 		carrierNode.disconnect();
 		newCarrierNode.noteOn(0);
 		carrierNode.noteOff(0);
