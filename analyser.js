@@ -4,10 +4,15 @@ var CANVAS_HEIGHT = 120;
 var FILTER_QUALITY = 30;  // 4.2;	// The Q value for the carrier and modulator filters
 
 var animationRunning = false;
-var modulatorAnalyser = null;
-var carrierAnalyser = null;
 var outputAnalyser = null;
 
+// These are "placeholder" gain nodes - because the modulator and carrier will get swapped in
+// as they are loaded, it's easier to connect these nodes to all the bands, and the "real"
+// modulator & carrier AudioBufferSourceNodes connect to these.
+var modulatorInput = null;
+var carrierInput = null;
+
+// These are the arrays of nodes - the "columns" across the frequency band "rows"
 var modFilterBands = null;		// tuned bandpass filters
 var modFilterPostGains = null;	// post-filter gains.
 var heterodynes = null;		// gain nodes used to multiply bandpass X sine
@@ -95,16 +100,10 @@ generateVocoderBands( 55, 7040, 30 );
 
 
 function initBandpassFilters() {
-	// When this function is called, the carrierNode and modulatorAnalyser should already be created.
-	if (!carrierNode) {
-		console.log("no carrier node!\n");
-		return;
-	}
-
-	if (!modulatorNode) {
-		console.log("no modulator node!\n");
-		return;
-	}
+	// When this function is called, the carrierNode and modulatorAnalyser 
+	// may not already be created.  Create placeholder nodes for them.
+	modulatorInput = audioContext.createGainNode();
+	carrierInput = audioContext.createGainNode();
 
 /*
 	modFilterBands = null;		// tuned bandpass filters
@@ -150,7 +149,7 @@ function initBandpassFilters() {
 	hpFilter.type = hpFilter.HIGHPASS;	// Bandpass filter
 	hpFilter.frequency.value = vocoderBands[numVocoderBands-1].frequency;
 	hpFilter.Q.value = FILTER_QUALITY; // 	vocoderBands[i].Q;
-	modulatorNode.connect( hpFilter);
+	modulatorInput.connect( hpFilter);
 
 	var hpFilterGain = audioContext.createGainNode();
 	hpFilterGain.gain.value = 0.0;
@@ -173,9 +172,6 @@ function initBandpassFilters() {
 	carrierFilterPostGains.length = 0;
 	carrierBandGains.length = 0;
 
-
-//	modulatorNode.connect( analyser1 );
-
 	for (var i=0; i<numVocoderBands; i++) {
 		// CREATE THE MODULATOR CHAIN
 		// create the bandpass filter in the modulator chain
@@ -183,7 +179,7 @@ function initBandpassFilters() {
 		modulatorFilter.type = modulatorFilter.BANDPASS;	// Bandpass filter
 		modulatorFilter.frequency.value = vocoderBands[i].frequency;
 		modulatorFilter.Q.value = FILTER_QUALITY; // 	initial quality
-		modulatorNode.connect( modulatorFilter );
+		modulatorInput.connect( modulatorFilter );
 		modFilterBands.push( modulatorFilter );
 
 		// create a post-filtering gain to bump the levels up.
@@ -195,7 +191,7 @@ function initBandpassFilters() {
 		// Create the sine oscillator for the heterodyne
 		var heterodyneOscillator = audioContext.createOscillator();
 		heterodyneOscillator.frequency.value = vocoderBands[i].frequency;
-//			osc.noteOn(0);
+		heterodyneOscillator.noteOn(0);
 
 		// Create the node to multiply the sine by the modulator
 		var heterodyne = audioContext.createGainNode();
@@ -220,6 +216,7 @@ function initBandpassFilters() {
 		lpFilter.Q.value = 1;	// don't need a peak
 		lpFilters.push( lpFilter );
 		power.connect( lpFilter );
+//		heterodyne.connect( lpFilter );
 
 		var lpFilterPostGain = audioContext.createGainNode();
 		lpFilterPostGain.gain.value = 1.0; 
@@ -236,7 +233,7 @@ function initBandpassFilters() {
 		carrierFilter.frequency.value = vocoderBands[i].frequency;
 		carrierFilter.Q.value = FILTER_QUALITY;
 		carrierBands.push( carrierFilter );
-		carrierNode.connect( carrierFilter );
+		carrierInput.connect( carrierFilter );
 
 		var carrierFilterPostGain = audioContext.createGainNode();
 		carrierFilterPostGain.gain.value = 16.0;
@@ -259,21 +256,27 @@ function initBandpassFilters() {
 		if ( i == DEBUG_BAND ) {
 //			modulatorFilterPostGain.connect( carrierAnalyser );
 
-			modulatorFilterPostGain.connect( analyser1 );
-			analyserView1.setOverlayText( "mod filter post gain" );
+			carrierFilterPostGain.connect( analyser1 );
+			analyserView1.setOverlayText( "carrierFilterPostGain" );
 //			heterodynePostGain.connect( analyser2 );
 //			analyserView2.setOverlayText( "heterodyne post gain" );
-			bandGain.connect( analyser2 );
-			analyserView2.setOverlayText( "band post gain" );
+			lpFilterPostGain.connect( analyser2 );
+			analyserView2.setOverlayText( "lpFilterPostGain" );
 		}
 	}
 
-		addSlider( "mod filter Q", modFilterBands[0].Q.value, 1.0, 100.0, modFilterBands, updateQs );
-		addSlider( "mod filter post gain", modFilterPostGains[0].gain.value, 1.0, 20.0, modFilterPostGains, updateGains );
-		addSlider( "carrier filter Q", carrierBands[0].Q.value, 1.0, 100.0, carrierBands, updateQs );
-		addSlider( "carrier filter post gain", carrierFilterPostGains[0].gain.value, 1.0, 20.0, carrierFilterPostGains, updateGains );
-		addSlider( "heterodyne post gain", heterodynes[0].gain.value, 1.0, 8.0, heterodynes, updateGains );
-		addSlider( "lp filter post gain", lpFilterPostGains[0].gain.value, 1.0, 10.0, lpFilterPostGains, updateGains );
+	addColumnSlider( "mod filter Q", modFilterBands[0].Q.value, 1.0, 100.0, modFilterBands, updateQs );
+	addColumnSlider( "mod filter post gain", modFilterPostGains[0].gain.value, 1.0, 20.0, modFilterPostGains, updateGains );
+	addColumnSlider( "heterodyne post gain", heterodynes[0].gain.value, 1.0, 8.0, heterodynes, updateGains );
+	addColumnSlider( "lp filter Q", lpFilters[0].Q.value, 1.0, 100.0, lpFilters, updateQs );
+	addColumnSlider( "lp filter frequency", lpFilters[0].frequency.value, 1.0, 100.0, lpFilters, updateFrequencies );
+	addColumnSlider( "lp filter post gain", lpFilterPostGains[0].gain.value, 1.0, 10.0, lpFilterPostGains, updateGains );
+
+	addColumnSlider( "carrier filter Q", carrierBands[0].Q.value, 1.0, 100.0, carrierBands, updateQs );
+	addColumnSlider( "carrier filter post gain", carrierFilterPostGains[0].gain.value, 1.0, 20.0, carrierFilterPostGains, updateGains );
+
+		lpFilter.frequency.value = 5.0;	// Guesstimate!  Mask off 20Hz and above.
+		lpFilter.Q.value = 1;	// don't need a peak
 
 
 }
@@ -338,23 +341,13 @@ function drawVocoderGains() {
 var rafID = null;
 
 function cancelVocoderUpdates() {
-//	window.clearTimeout( vtimer );
 	window.webkitCancelAnimationFrame( rafID );
-	modulatorNode = null;
-	carrierNode = null;
-	vocoding = false;
-	modulatorAnalyser = null;
-	carrierAnalyser = null;
-	outputAnalyser = null;
-	filters = null;
-	gains =  null;
+
+	//turn off the carrier loop when the modulator is done playing
+	carrierNode.noteOff(0); 
 }
 
 function updateAnalysers(time) {
-	if ( modulatorAnalyser )
-		updateAnalyser( modulatorAnalyser, modulatorCanvas );
-	if ( carrierAnalyser )
-		updateAnalyser( carrierAnalyser, carrierCanvas );
 	if ( outputAnalyser )
 		updateAnalyser( outputAnalyser, outputCanvas );
 		
