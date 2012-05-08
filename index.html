@@ -16,6 +16,7 @@
 }
 .notready .sndurl { color: red }
 canvas { aborder: 1px solid blue}
+div.overlay { position: absolute; z-index: 10;}
 </style>
 
 <!-- Analyser Node library -->
@@ -56,8 +57,6 @@ var analyserView1;
 var analyserView2;
 
 o3djs.require('o3djs.shader');
-
-
 
 
 function playModulatorOnly() {
@@ -396,9 +395,9 @@ function init() {
     analyser1.connect( zerogain );
     analyser2.connect( zerogain );
 
-    analyserView1 = new AnalyserView("view1");
+    analyserView1 = new AnalyserView("view1", "overlay1");
     analyserView1.initByteBuffer( analyser1 );
-    analyserView2 = new AnalyserView("view2");
+    analyserView2 = new AnalyserView("view2", "overlay2");
     analyserView2.initByteBuffer( analyser2 );
 }
 
@@ -478,8 +477,8 @@ window.onkeydown=keyevent();
 </select>
 </div>
 <!-- Canvas tag for WebGL output -->
-<canvas id="view1" width="1280px" height="200px"></canvas>
-<canvas id="view2" width="1280px" height="200px"></canvas>
+<div class="overlay" id="overlay1"></div><canvas id="view1" width="1280px" height="200px"></canvas>
+<div class="overlay" id="overlay2"></div><canvas id="view2" width="1280px" height="200px"></canvas>
 
 
 	</div>

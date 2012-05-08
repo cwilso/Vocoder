@@ -1,7 +1,7 @@
 var CANVAS_WIDTH = 2000;
 var CANVAS_HEIGHT = 120;
 
-var FILTER_QUALITY = 20;  // 4.2;	// The Q value for the carrier and modulator filters
+var FILTER_QUALITY = 30;  // 4.2;	// The Q value for the carrier and modulator filters
 
 var animationRunning = false;
 var modulatorAnalyser = null;
@@ -13,6 +13,7 @@ var modFilterPostGains = null;	// post-filter gains.
 var heterodynes = null;		// gain nodes used to multiply bandpass X sine
 var powers = null;			// gain nodes used to multiply prev out by itself
 var lpFilters = null;		// tuned LP filters to remove doubled copy of product
+var lpFilterPostGains = null; 	// gain nodes for tuning input to waveshapers
 var carrierBands = null;	// tuned bandpass filters, same as modFilterBands but in carrier chain
 var carrierFilterPostGains = null;	// post-bandpass gain adjustment
 var carrierBandGains = null;	// these are the "control gains" driven by the lpFilters
@@ -20,7 +21,7 @@ var carrierBandGains = null;	// these are the "control gains" driven by the lpFi
 var modulatorCanvas = null;
 var carrierCanvas = null;
 var outputCanvas = null;
-var DEBUG_BAND = 8;		// current debug band - used to display a filtered signal
+var DEBUG_BAND = 5;		// current debug band - used to display a filtered signal
 
 var vocoderBands = [	// The vocoder bands.
 // { Q: 200.0, frequency: 50	},
@@ -128,6 +129,9 @@ function initBandpassFilters() {
 
 	if (lpFilters == null)
 		lpFilters = new Array();
+
+	if (lpFilterPostGains == null)
+		lpFilterPostGains = new Array();
 	
 	if (carrierBands == null)
 		carrierBands = new Array();
@@ -164,6 +168,7 @@ function initBandpassFilters() {
 	heterodynes.length = 0;
 	powers.length = 0;
 	lpFilters.length = 0;
+	lpFilterPostGains.length = 0;
 	carrierBands.length = 0;
 	carrierFilterPostGains.length = 0;
 	carrierBandGains.length = 0;
@@ -183,7 +188,7 @@ function initBandpassFilters() {
 
 		// create a post-filtering gain to bump the levels up.
 		var modulatorFilterPostGain = audioContext.createGainNode();
-		modulatorFilterPostGain.gain.value = 4;
+		modulatorFilterPostGain.gain.value = 6.0;
 		modulatorFilter.connect( modulatorFilterPostGain );
 		modFilterPostGains.push( modulatorFilterPostGain );
 
@@ -217,8 +222,9 @@ function initBandpassFilters() {
 		power.connect( lpFilter );
 
 		var lpFilterPostGain = audioContext.createGainNode();
-		lpFilterPostGain.gain.value = 4.0; 
+		lpFilterPostGain.gain.value = 1.0; 
 		lpFilter.connect( lpFilterPostGain );
+		lpFilterPostGains.push( lpFilterPostGain );
 
    		var waveshaper = audioContext.createWaveShaper();
 		waveshaper.curve = waveShaperCurve;
@@ -233,7 +239,7 @@ function initBandpassFilters() {
 		carrierNode.connect( carrierFilter );
 
 		var carrierFilterPostGain = audioContext.createGainNode();
-		carrierFilterPostGain.gain.value = 6.0;
+		carrierFilterPostGain.gain.value = 16.0;
 		carrierFilter.connect( carrierFilterPostGain );
 		carrierFilterPostGains.push( carrierFilterPostGain );
 
@@ -253,16 +259,21 @@ function initBandpassFilters() {
 		if ( i == DEBUG_BAND ) {
 //			modulatorFilterPostGain.connect( carrierAnalyser );
 
-			modulatorNode.connect( analyser1 );
-			modulatorFilterPostGain.connect( analyser2 );
+			modulatorFilterPostGain.connect( analyser1 );
+			analyserView1.setOverlayText( "mod filter post gain" );
+//			heterodynePostGain.connect( analyser2 );
+//			analyserView2.setOverlayText( "heterodyne post gain" );
+			bandGain.connect( analyser2 );
+			analyserView2.setOverlayText( "band post gain" );
 		}
 	}
 
 		addSlider( "mod filter Q", modFilterBands[0].Q.value, 1.0, 100.0, modFilterBands, updateQs );
-		addSlider( "mod filter post gain", modFilterPostGains[0].gain.value, 1.0, 100.0, modFilterPostGains, updateGains );
+		addSlider( "mod filter post gain", modFilterPostGains[0].gain.value, 1.0, 20.0, modFilterPostGains, updateGains );
 		addSlider( "carrier filter Q", carrierBands[0].Q.value, 1.0, 100.0, carrierBands, updateQs );
-		addSlider( "carrier filter post gain", carrierFilterPostGains[0].gain.value, 1.0, 100.0, carrierFilterPostGains, updateGains );
+		addSlider( "carrier filter post gain", carrierFilterPostGains[0].gain.value, 1.0, 20.0, carrierFilterPostGains, updateGains );
 		addSlider( "heterodyne post gain", heterodynes[0].gain.value, 1.0, 8.0, heterodynes, updateGains );
+		addSlider( "lp filter post gain", lpFilterPostGains[0].gain.value, 1.0, 10.0, lpFilterPostGains, updateGains );
 
 
 }
