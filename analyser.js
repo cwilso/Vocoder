@@ -62,19 +62,19 @@ function generateVocoderBands( startFreq, endFreq, numBands ) {
 	var centsPerBand = totalRangeInCents / numBands;
 	var scale = Math.pow( 2, centsPerBand / 1200 );  // This is the scaling for successive bands
 
-	newVocoderBands = new Array();
+	vocoderBands = new Array();
 	var currentFreq = startFreq;
 
 	for (var i=0; i<numBands; i++) {
-		newVocoderBands[i] = new Object();
-		newVocoderBands[i].frequency = currentFreq;
+		vocoderBands[i] = new Object();
+		vocoderBands[i].frequency = currentFreq;
 		currentFreq = currentFreq * scale;
 	}
 
-	numNewVocoderBands = numBands;
+	numVocoderBands = numBands;
 }
 
-generateVocoderBands( 55, 7040, 30 );
+generateVocoderBands( 55, 7040, 28 );
 
 /*  Moog vocoder bands - these are the boundaries between bands, not the bands' center freqs.
 50 		
@@ -191,7 +191,10 @@ function initBandpassFilters() {
 		// Create the sine oscillator for the heterodyne
 		var heterodyneOscillator = audioContext.createOscillator();
 		heterodyneOscillator.frequency.value = vocoderBands[i].frequency;
-		heterodyneOscillator.noteOn(0);
+
+//TODO: DEBUG: the "if" clause here can be removed in future; some older Chrome builds don't have noteOn on Oscillator
+		if (heterodyneOscillator.noteOn)
+			heterodyneOscillator.noteOn(0);
 
 		// Create the node to multiply the sine by the modulator
 		var heterodyne = audioContext.createGainNode();
@@ -236,7 +239,7 @@ function initBandpassFilters() {
 		carrierInput.connect( carrierFilter );
 
 		var carrierFilterPostGain = audioContext.createGainNode();
-		carrierFilterPostGain.gain.value = 16.0;
+		carrierFilterPostGain.gain.value = 10.0;
 		carrierFilter.connect( carrierFilterPostGain );
 		carrierFilterPostGains.push( carrierFilterPostGain );
 
