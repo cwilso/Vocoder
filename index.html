@@ -76,7 +76,7 @@ function playModulatorOnly() {
 
 var oscillatorNode = null;
 
-var FOURIER_SIZE = 8;
+var FOURIER_SIZE = 1024;
 
 function playWaveTable() {
 	var real = new Float32Array(FOURIER_SIZE);
@@ -91,8 +91,7 @@ function playWaveTable() {
 	var wavetable = audioContext.createWaveTable(real, imag);
 	oscillatorNode = audioContext.createOscillator();
 	oscillatorNode.type = oscillatorNode.CUSTOM;
-	oscillatorNode.detune = -1200;
-	oscillatorNode.frequency = 10.0;
+	oscillatorNode.frequency.value = 20.0;
 	oscillatorNode.setWaveTable(wavetable);
 
 
