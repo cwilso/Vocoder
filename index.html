@@ -68,15 +68,30 @@ function playModulatorOnly() {
 	
 	vocoding = false;
 	modulatorNode.connect( audioContext.destination );
+
+	createNoiseNode();
 	
 	modulatorNode.noteOn(0);
   	window.webkitRequestAnimationFrame( updateAnalysers );
 	window.setTimeout( cancelVocoderUpdates, modulatorNode.buffer.duration * 1000 + 20 );
 }
 
+function playNoise() {
+	loadNoiseBuffer();
+	noiseNode = audioContext.createBufferSource();
+	noiseNode.buffer = noiseBuffer;
+	noiseNode.loop = true;
+	noiseNode.connect( analyser2 );
+	noiseNode.connect( audioContext.destination );
+	analyserView2.setOverlayText( "Noise" );
+	if (noiseNode.noteOn)
+		noiseNode.noteOn(0);
+  	window.webkitRequestAnimationFrame( updateAnalysers );
+}
+
 var oscillatorNode = null;
 
-var FOURIER_SIZE = 1024;
+var FOURIER_SIZE = 4096;
 
 function playWaveTable() {
 	var real = new Float32Array(FOURIER_SIZE);
@@ -91,14 +106,35 @@ function playWaveTable() {
 	var wavetable = audioContext.createWaveTable(real, imag);
 	oscillatorNode = audioContext.createOscillator();
 	oscillatorNode.type = oscillatorNode.CUSTOM;
-	oscillatorNode.frequency.value = 20.0;
+	oscillatorNode.frequency.value = 110;
 	oscillatorNode.setWaveTable(wavetable);
 
-
+	oscillatorNode.connect( analyser2 );
+	analyserView2.setOverlayText( "Wavetable" );
 	vocoding = true;
 
-	oscillatorNode.connect(carrierInput);
-	oscillatorNode.noteOn(0);
+	var oscillatorGain = audioContext.createGainNode();
+	oscillatorGain.gain.value = 10.0;
+	oscillatorGain.connect(carrierInput);
+	oscillatorNode.connect(oscillatorGain);
+
+	addSingleValueSlider( "oscillator gain", oscillatorGain.gain.value, 0.0, 20.0, oscillatorGain, updateSingleGain );
+
+	if (oscillatorNode.noteOn)
+		oscillatorNode.noteOn(0);
+
+	loadNoiseBuffer();
+	noiseNode = audioContext.createBufferSource();
+	noiseNode.buffer = noiseBuffer;
+	noiseNode.loop = true;
+	var noiseGain = audioContext.createGainNode();
+	noiseGain.gain.value = 0.04;
+	noiseGain.connect(carrierInput);
+	noiseNode.connect(noiseGain);
+	if (noiseNode.noteOn)
+		noiseNode.noteOn(0);
+
+	addSingleValueSlider( "noise gain", noiseGain.gain.value, 0.0, 5.0, noiseGain, updateSingleGain );
 	
 	modulatorNode = audioContext.createBufferSource();
 	modulatorNode.buffer = modulatorBuffer;
@@ -109,8 +145,10 @@ function playWaveTable() {
 }
 
 function stop() {
-	if (oscillatorNode)
+	if (oscillatorNode && oscillatorNode.noteOff)
 		oscillatorNode.noteOff(0);
+	if (noiseNode)
+		noiseNode.noteOff(0);
 	if (modulatorNode)
 		modulatorNode.noteOff(0);
 	if (carrierNode)
@@ -347,6 +385,7 @@ window.onkeydown=keyevent();
 			<button onclick="play();">Vocode</button>
 			<button onclick="playWaveTable();">Vocode using WaveTable</button>
 			<button onclick="playModulatorOnly();">Play Modulator only</button>
+			<button onclick="playNoise();">Play noise only</button>
 			<button onclick="stop();">Stop</button>
 		</div>
 	</div>

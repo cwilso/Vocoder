@@ -12,6 +12,10 @@ var outputAnalyser = null;
 var modulatorInput = null;
 var carrierInput = null;
 
+// noise node
+var noiseBuffer = null;
+var noiseNode = null;
+
 // These are the arrays of nodes - the "columns" across the frequency band "rows"
 var modFilterBands = null;		// tuned bandpass filters
 var modFilterPostGains = null;	// post-filter gains.
@@ -96,8 +100,15 @@ generateVocoderBands( 55, 7040, 28 );
 5080
 */
 
-
-
+function loadNoiseBuffer() {	// create a 5-second buffer of noise
+    var lengthInSamples =  5 * audioContext.sampleRate;
+    noiseBuffer = audioContext.createBuffer(1, lengthInSamples, audioContext.sampleRate);
+    var bufferData = noiseBuffer.getChannelData(0);
+    
+    for (var i = 0; i < lengthInSamples; ++i) {
+        bufferData[i] = (2*Math.random() - 1);	// -1 to +1
+    }
+}
 
 function initBandpassFilters() {
 	// When this function is called, the carrierNode and modulatorAnalyser 
@@ -154,6 +165,7 @@ function initBandpassFilters() {
 	var hpFilterGain = audioContext.createGainNode();
 	hpFilterGain.gain.value = 0.0;
 
+	addSingleValueSlider( "carrier input gain", carrierInput.gain.value, 0.0, 10.0, carrierInput, updateSingleGain );
 	addSingleValueSlider( "hi-pass gain", hpFilterGain.gain.value, 0.0, 1.0, hpFilterGain, updateSingleGain );
 	addSingleValueSlider( "hi-pass freq", hpFilter.frequency.value, 4000, 10000.0, hpFilter, updateSingleFrequency );
 	addSingleValueSlider( "hi-pass Q", hpFilter.Q.value, 1, 50.0, hpFilter, updateSingleQ );
@@ -252,8 +264,8 @@ function initBandpassFilters() {
 		bandGain.connect( audioContext.destination );
 
 		// show the output
-		bandGain.connect( analyser2 );
-		analyserView2.setOverlayText( "Output" );
+//		bandGain.connect( analyser2 );
+//		analyserView2.setOverlayText( "Output" );
 
 		// Debugging visualizer
 		if ( i == DEBUG_BAND ) {
