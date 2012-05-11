@@ -16,6 +16,15 @@ function updateSingleFrequency( event ) {
 	t.parentNode.childNodes[2].textContent = value;
 }
 
+function updateSingleDetune( event ) {
+	var t = event.target;
+	var value = t.value;
+	t.audioNode.detune.value = value;
+
+	//update the numeric display
+	t.parentNode.childNodes[2].textContent = value;
+}
+
 function updateSingleQ( event ) {
 	var t = event.target;
 	var value = t.value;

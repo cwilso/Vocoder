@@ -108,17 +108,16 @@ function playWaveTable() {
 	oscillatorNode.type = oscillatorNode.CUSTOM;
 	oscillatorNode.frequency.value = 110;
 	oscillatorNode.setWaveTable(wavetable);
+	addSingleValueSlider( "Wavetable detune", oscillatorNode.detune.value, -1200.0, 1200.0, oscillatorNode, updateSingleDetune );
 
-	oscillatorNode.connect( analyser2 );
-	analyserView2.setOverlayText( "Wavetable" );
 	vocoding = true;
 
 	var oscillatorGain = audioContext.createGainNode();
-	oscillatorGain.gain.value = 10.0;
+	oscillatorGain.gain.value = 70.0;
 	oscillatorGain.connect(carrierInput);
 	oscillatorNode.connect(oscillatorGain);
 
-	addSingleValueSlider( "oscillator gain", oscillatorGain.gain.value, 0.0, 20.0, oscillatorGain, updateSingleGain );
+	addSingleValueSlider( "WaveTable gain", oscillatorGain.gain.value, 0.0, 100.0, oscillatorGain, updateSingleGain );
 
 	if (oscillatorNode.noteOn)
 		oscillatorNode.noteOn(0);
@@ -128,13 +127,13 @@ function playWaveTable() {
 	noiseNode.buffer = noiseBuffer;
 	noiseNode.loop = true;
 	var noiseGain = audioContext.createGainNode();
-	noiseGain.gain.value = 0.04;
+	noiseGain.gain.value = 0.3;
 	noiseGain.connect(carrierInput);
 	noiseNode.connect(noiseGain);
 	if (noiseNode.noteOn)
 		noiseNode.noteOn(0);
 
-	addSingleValueSlider( "noise gain", noiseGain.gain.value, 0.0, 5.0, noiseGain, updateSingleGain );
+	addSingleValueSlider( "WaveTable noise gain", noiseGain.gain.value, 0.0, 1.0, noiseGain, updateSingleGain );
 	
 	modulatorNode = audioContext.createBufferSource();
 	modulatorNode.buffer = modulatorBuffer;

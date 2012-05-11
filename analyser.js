@@ -158,17 +158,13 @@ function initBandpassFilters() {
 	// Set up a high-pass filter to add back in the fricatives, etc.
 	var hpFilter = audioContext.createBiquadFilter();
 	hpFilter.type = hpFilter.HIGHPASS;	// Bandpass filter
-	hpFilter.frequency.value = vocoderBands[numVocoderBands-1].frequency;
+	hpFilter.frequency.value = 8000; // or use vocoderBands[numVocoderBands-1].frequency;
 	hpFilter.Q.value = FILTER_QUALITY; // 	vocoderBands[i].Q;
 	modulatorInput.connect( hpFilter);
 
 	var hpFilterGain = audioContext.createGainNode();
 	hpFilterGain.gain.value = 0.0;
 
-	addSingleValueSlider( "carrier input gain", carrierInput.gain.value, 0.0, 10.0, carrierInput, updateSingleGain );
-	addSingleValueSlider( "hi-pass gain", hpFilterGain.gain.value, 0.0, 1.0, hpFilterGain, updateSingleGain );
-	addSingleValueSlider( "hi-pass freq", hpFilter.frequency.value, 4000, 10000.0, hpFilter, updateSingleFrequency );
-	addSingleValueSlider( "hi-pass Q", hpFilter.Q.value, 1, 50.0, hpFilter, updateSingleQ );
 
 	hpFilter.connect( hpFilterGain );
 	hpFilterGain.connect( audioContext.destination );
@@ -183,6 +179,9 @@ function initBandpassFilters() {
 	carrierBands.length = 0;
 	carrierFilterPostGains.length = 0;
 	carrierBandGains.length = 0;
+
+	var outputGain = audioContext.createGainNode();
+	outputGain.connect(audioContext.destination);
 
 	for (var i=0; i<numVocoderBands; i++) {
 		// CREATE THE MODULATOR CHAIN
@@ -261,7 +260,7 @@ function initBandpassFilters() {
 		carrierFilterPostGain.connect( bandGain );
 		waveshaper.connect( bandGain.gain );	// connect the lp controller
 
-		bandGain.connect( audioContext.destination );
+		bandGain.connect( outputGain );
 
 		// show the output
 //		bandGain.connect( analyser2 );
@@ -271,7 +270,7 @@ function initBandpassFilters() {
 		if ( i == DEBUG_BAND ) {
 //			modulatorFilterPostGain.connect( carrierAnalyser );
 
-			heterodynePostGain.connect( outputAnalyser );
+			modulatorFilterPostGain.connect( outputAnalyser );
 
 //			carrierFilterPostGain.connect( analyser1 );
 //			analyserView1.setOverlayText( "carrierFilterPostGain" );
@@ -280,6 +279,10 @@ function initBandpassFilters() {
 		}
 	}
 
+	addSingleValueSlider( "hi-pass gain", hpFilterGain.gain.value, 0.0, 1.0, hpFilterGain, updateSingleGain );
+	addSingleValueSlider( "hi-pass freq", hpFilter.frequency.value, 4000, 10000.0, hpFilter, updateSingleFrequency );
+	addSingleValueSlider( "hi-pass Q", hpFilter.Q.value, 1, 50.0, hpFilter, updateSingleQ );
+
 	addColumnSlider( "mod filter Q", modFilterBands[0].Q.value, 1.0, 100.0, modFilterBands, updateQs );
 	addColumnSlider( "mod filter post gain", modFilterPostGains[0].gain.value, 1.0, 20.0, modFilterPostGains, updateGains );
 	addColumnSlider( "heterodyne post gain", heterodynes[0].gain.value, 1.0, 8.0, heterodynes, updateGains );
@@ -287,11 +290,16 @@ function initBandpassFilters() {
 	addColumnSlider( "lp filter frequency", lpFilters[0].frequency.value, 1.0, 100.0, lpFilters, updateFrequencies );
 	addColumnSlider( "lp filter post gain", lpFilterPostGains[0].gain.value, 1.0, 10.0, lpFilterPostGains, updateGains );
 
+	addSingleValueSlider( "carrier input gain", carrierInput.gain.value, 0.0, 10.0, carrierInput, updateSingleGain );
 	addColumnSlider( "carrier filter Q", carrierBands[0].Q.value, 1.0, 100.0, carrierBands, updateQs );
 	addColumnSlider( "carrier filter post gain", carrierFilterPostGains[0].gain.value, 1.0, 20.0, carrierFilterPostGains, updateGains );
+	addSingleValueSlider( "output gain", outputGain.gain.value, 0.0, 10.0, outputGain, updateSingleGain );
 
 	modulatorInput.connect( analyser1 );
-	analyserView1.setOverlayText( "modulatorInput" );
+	analyserView1.setOverlayText( "Modulator input" );
+
+	outputGain.connect( analyser2 );
+	analyserView2.setOverlayText( "Output" );
 }
 
 
