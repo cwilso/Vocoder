@@ -6,12 +6,13 @@
 <!-- <link rel="shortcut icon" href="Speaker.ico"> -->
 
 <style>
+.play { background: lime; }
 .panel {
    width: 100%;
    border: 1px solid black;
    aheight: 145px;
 }
-.hover {
+.hover, .hover * {
 	border: 5px solid red;
 }
 .notready .sndurl { color: red }
@@ -74,19 +75,6 @@ function playModulatorOnly() {
 	modulatorNode.noteOn(0);
   	window.webkitRequestAnimationFrame( updateAnalysers );
 	window.setTimeout( cancelVocoderUpdates, modulatorNode.buffer.duration * 1000 + 20 );
-}
-
-function playNoise() {
-	loadNoiseBuffer();
-	noiseNode = audioContext.createBufferSource();
-	noiseNode.buffer = noiseBuffer;
-	noiseNode.loop = true;
-	noiseNode.connect( analyser2 );
-	noiseNode.connect( audioContext.destination );
-	analyserView2.setOverlayText( "Noise" );
-	if (noiseNode.noteOn)
-		noiseNode.noteOn(0);
-  	window.webkitRequestAnimationFrame( updateAnalysers );
 }
 
 var oscillatorNode = null;
@@ -381,10 +369,9 @@ window.onkeydown=keyevent();
 	<div id="sliders"></div>
 	<div class="panel notready" id="modulator">
 		<div class="headertext">Modulator: <span class="sndurl" id="modurl">No modulator file loaded.</span>
-			<button onclick="play();">Vocode</button>
-			<button onclick="playWaveTable();">Vocode using WaveTable</button>
-			<button onclick="playModulatorOnly();">Play Modulator only</button>
-			<button onclick="playNoise();">Play noise only</button>
+			<button class="play" onclick="play();">Vocode</button>
+			<button class="play" onclick="playWaveTable();">Vocode using WaveTable synthesis voice</button>
+			<button class="play" onclick="playModulatorOnly();">Play Modulator only</button>
 			<button onclick="stop();">Stop</button>
 		</div>
 	</div>
