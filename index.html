@@ -69,10 +69,11 @@ function playModulatorOnly() {
 	
 	vocoding = false;
 	modulatorNode.connect( audioContext.destination );
-
-	createNoiseNode();
-	
 	modulatorNode.noteOn(0);
+
+	modulatorNode.connect( analyser1 );
+	analyserView1.setOverlayText( "Modulator" );
+
   	window.webkitRequestAnimationFrame( updateAnalysers );
 	window.setTimeout( cancelVocoderUpdates, modulatorNode.buffer.duration * 1000 + 20 );
 }
