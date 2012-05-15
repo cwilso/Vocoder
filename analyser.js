@@ -240,7 +240,7 @@ function initBandpassFilters() {
 		lpFilter.Q.value = 1;	// don't need a peak
 		lpFilters.push( lpFilter );
 		power.connect( lpFilter );
-//		heterodyne.connect( lpFilter );
+//		heterodynePostGain.connect( lpFilter );
 
 		var lpFilterPostGain = audioContext.createGainNode();
 		lpFilterPostGain.gain.value = 1.0; 
@@ -362,7 +362,6 @@ function updateAnalyser( analyserNode, drawContext ) {
 //	console.log("\n" + analyserNode.frequencyBinCount);
 }
 
-
 function drawVocoderGains() {
 	var GAIN_WIDTH = 1200;
 	vocoderCanvas.clearRect(0, 0, GAIN_WIDTH, CANVAS_HEIGHT);
@@ -373,7 +372,7 @@ function drawVocoderGains() {
 	// Draw rectangle for each vocoder bin.
 	for (var i = 0; i < numVocoderBands; i++) {
     	vocoderCanvas.fillStyle = "hsl( " + Math.round((i*360)/numVocoderBands) + ", 100%, 50%)";
-    	vocoderCanvas.fillRect(i * binWidth, CANVAS_HEIGHT, binWidth, -carrierBandGains[i].gain.value * CANVAS_HEIGHT );
+    	vocoderCanvas.fillRect(i * binWidth, CANVAS_HEIGHT, binWidth, -carrierBandGains[i].gain.value * 2 * CANVAS_HEIGHT );
 	}
 }
 
