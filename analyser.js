@@ -159,7 +159,7 @@ function initBandpassFilters() {
 	var hpFilter = audioContext.createBiquadFilter();
 	hpFilter.type = hpFilter.HIGHPASS;	// Bandpass filter
 	hpFilter.frequency.value = 8000; // or use vocoderBands[numVocoderBands-1].frequency;
-	hpFilter.Q.value = FILTER_QUALITY; // 	vocoderBands[i].Q;
+	hpFilter.Q.value = 1; // 	no peaking
 	modulatorInput.connect( hpFilter);
 
 	var hpFilterGain = audioContext.createGainNode();
