@@ -1,7 +1,7 @@
 var CANVAS_WIDTH = 2000;
 var CANVAS_HEIGHT = 120;
 
-var FILTER_QUALITY = 15;  // 4.2;	// The Q value for the carrier and modulator filters
+var FILTER_QUALITY = 4;  // The Q value for the carrier and modulator filters
 
 var animationRunning = false;
 var outputAnalyser = null;
@@ -301,7 +301,7 @@ function initBandpassFilters() {
 	addSingleValueSlider( "hi-pass freq", hpFilter.frequency.value, 4000, 10000.0, hpFilter, updateSingleFrequency );
 	addSingleValueSlider( "hi-pass Q", hpFilter.Q.value, 1, 50.0, hpFilter, updateSingleQ );
 
-	addColumnSlider( "mod filter Q", modFilterBands[0].Q.value, 1.0, 100.0, modFilterBands, updateQs );
+	addColumnSlider( "mod filter Q", modFilterBands[0].Q.value, 1.0, 20.0, modFilterBands, updateQs );
 	addColumnSlider( "mod filter post gain", modFilterPostGains[0].gain.value, 1.0, 20.0, modFilterPostGains, updateGains );
 	addColumnSlider( "heterodyne post gain", heterodynes[0].gain.value, 1.0, 8.0, heterodynes, updateGains );
 	addColumnSlider( "lp filter Q", lpFilters[0].Q.value, 1.0, 100.0, lpFilters, updateQs );
@@ -309,7 +309,7 @@ function initBandpassFilters() {
 	addColumnSlider( "lp filter post gain", lpFilterPostGains[0].gain.value, 1.0, 10.0, lpFilterPostGains, updateGains );
 
 	addSingleValueSlider( "carrier input gain", carrierInput.gain.value, 0.0, 10.0, carrierInput, updateSingleGain );
-	addColumnSlider( "carrier filter Q", carrierBands[0].Q.value, 1.0, 100.0, carrierBands, updateQs );
+	addColumnSlider( "carrier filter Q", carrierBands[0].Q.value, 1.0, 20.0, carrierBands, updateQs );
 	addColumnSlider( "carrier filter post gain", carrierFilterPostGains[0].gain.value, 1.0, 20.0, carrierFilterPostGains, updateGains );
 	addSingleValueSlider( "output gain", outputGain.gain.value, 0.0, 10.0, outputGain, updateSingleGain );
 
