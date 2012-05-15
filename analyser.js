@@ -1,7 +1,7 @@
 var CANVAS_WIDTH = 2000;
 var CANVAS_HEIGHT = 120;
 
-var FILTER_QUALITY = 30;  // 4.2;	// The Q value for the carrier and modulator filters
+var FILTER_QUALITY = 15;  // 4.2;	// The Q value for the carrier and modulator filters
 
 var animationRunning = false;
 var outputAnalyser = null;
@@ -193,17 +193,27 @@ function initBandpassFilters() {
 		modulatorInput.connect( modulatorFilter );
 		modFilterBands.push( modulatorFilter );
 
+		// Now, create a second bandpass filter tuned to the same frequency - 
+		// this turns our second-order filter into a 4th-order filter,
+		// which has a steeper rolloff/octave
+		var secondModulatorFilter = audioContext.createBiquadFilter();
+		secondModulatorFilter.type = secondModulatorFilter.BANDPASS;	// Bandpass filter
+		secondModulatorFilter.frequency.value = vocoderBands[i].frequency;
+		secondModulatorFilter.Q.value = FILTER_QUALITY; // 	initial quality
+		modulatorFilter.chainedFilter = secondModulatorFilter;
+		modulatorFilter.connect( secondModulatorFilter );
+
 		// create a post-filtering gain to bump the levels up.
 		var modulatorFilterPostGain = audioContext.createGainNode();
 		modulatorFilterPostGain.gain.value = 6.0;
-		modulatorFilter.connect( modulatorFilterPostGain );
+		secondModulatorFilter.connect( modulatorFilterPostGain );
 		modFilterPostGains.push( modulatorFilterPostGain );
 
 		// Create the sine oscillator for the heterodyne
 		var heterodyneOscillator = audioContext.createOscillator();
 		heterodyneOscillator.frequency.value = vocoderBands[i].frequency;
 
-//TODO: DEBUG: the "if" clause here can be removed in future; some older Chrome builds don't have noteOn on Oscillator
+		//TODO: the "if" clause here can be removed in future; some older Chrome builds don't have noteOn on Oscillator
 		if (heterodyneOscillator.noteOn)
 			heterodyneOscillator.noteOn(0);
 
@@ -249,9 +259,17 @@ function initBandpassFilters() {
 		carrierBands.push( carrierFilter );
 		carrierInput.connect( carrierFilter );
 
+		// We want our carrier filters to be 4th-order filter too.
+		var secondCarrierFilter = audioContext.createBiquadFilter();
+		secondCarrierFilter.type = secondCarrierFilter.BANDPASS;	// Bandpass filter
+		secondCarrierFilter.frequency.value = vocoderBands[i].frequency;
+		secondCarrierFilter.Q.value = FILTER_QUALITY; // 	initial quality
+		carrierFilter.chainedFilter = secondCarrierFilter;
+		carrierFilter.connect( secondCarrierFilter );
+
 		var carrierFilterPostGain = audioContext.createGainNode();
 		carrierFilterPostGain.gain.value = 10.0;
-		carrierFilter.connect( carrierFilterPostGain );
+		secondCarrierFilter.connect( carrierFilterPostGain );
 		carrierFilterPostGains.push( carrierFilterPostGain );
 
 		// Create the carrier band gain node

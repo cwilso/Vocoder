@@ -30,6 +30,10 @@ function updateSingleQ( event ) {
 	var value = t.value;
 	t.audioNode.Q.value = value;
 
+	// if this is one of our chained filters, update the chained filter too
+	if (t.audioNode.chainedFilter)
+		t.audioNode.chainedFilter.Q.value = value;
+
 	//update the numeric display
 	t.parentNode.childNodes[2].textContent = value;
 }
