@@ -1,7 +1,7 @@
 var CANVAS_WIDTH = 2000;
 var CANVAS_HEIGHT = 120;
 
-var FILTER_QUALITY = 4;  // The Q value for the carrier and modulator filters
+var FILTER_QUALITY = 6;  // The Q value for the carrier and modulator filters
 
 var animationRunning = false;
 var outputAnalyser = null;
@@ -220,6 +220,7 @@ function initBandpassFilters() {
 		// Create the node to multiply the sine by the modulator
 		var heterodyne = audioContext.createGainNode();
 		modulatorFilterPostGain.connect( heterodyne );
+		heterodyne.gain.value = 0.0;	// audio-rate inputs are summed with initial intrinsic value
 		heterodyneOscillator.connect( heterodyne.gain );
 
 		var heterodynePostGain = audioContext.createGainNode();
@@ -231,6 +232,7 @@ function initBandpassFilters() {
 		var power = audioContext.createGainNode();
 		powers.push( power );
 		heterodynePostGain.connect( power );
+		power.gain.value = 0.0;	// audio-rate inputs are summed with initial intrinsic value
 		heterodynePostGain.connect( power.gain );
 
 		// Create the lowpass filter to mask off the difference (near zero)
@@ -276,6 +278,7 @@ function initBandpassFilters() {
 		var bandGain = audioContext.createGainNode();
 		carrierBandGains.push( bandGain );
 		carrierFilterPostGain.connect( bandGain );
+		bandGain.gain.value = 0.0;	// audio-rate inputs are summed with initial intrinsic value
 		waveshaper.connect( bandGain.gain );	// connect the lp controller
 
 		bandGain.connect( outputGain );
@@ -397,7 +400,7 @@ function updateAnalysers(time) {
 }
 
 
-//  Notes for band-pass filter approach (to be implemented):
+//  Notes for band-pass filter approach:
 // The general approach is to feed the modulator signal through a bank of tuned band-pass filters.
 // Each band-pass filter should then be multiplied by a sine wave at the band's center frequency
 // (this is accomplished by feeding the sine wave audio signal into a gain node's gain AudioParam -
@@ -410,10 +413,5 @@ function updateAnalysers(time) {
 // [1] From http://en.wikipedia.org/wiki/Heterodyne - multiplying signals in this way creates two
 // new signals, one at the sum f1 + f2 of the frequencies, and the other at the difference f1 - f2.
 // Masking off the upper will result in obtaining the power signal.
-//
-// Could use an OscillatorNode (CRogers will publish editors draft spec today/Monday) as carrier -
-// Chris mentioned a "pulse train"?
-//
-// Need to pull the WebGL visualizer code as a debugging visualizer.
 //
 // Oscillator's current peak-to-peak normalization is 0.5 to -0.5; it will change to 1 to -1.
