@@ -145,17 +145,12 @@ function stop() {
 	window.webkitCancelAnimationFrame( rafID );
 }
 
-// This is used as a muted output node - right now, analysers and other nodes need to be connected.
-var zerogain = null;
-
 function setupVocoderGraph() {
 //	clearSliders();
 
 	outputAnalyser = audioContext.createAnalyser();
 	outputAnalyser.fftSize = 2048;
 	outputAnalyser.smoothingTimeConstant = 0.0;
-	outputAnalyser.connect( zerogain );
-
 	initBandpassFilters();
 }
 
@@ -319,20 +314,11 @@ function init() {
 //	startLoadingCarrier( "junky.ogg" );
 	startLoadingCarrier( "Saw.ogg" );
 
-	// set up the zero gain node
-	zerogain = audioContext.createGainNode();
-	zerogain.gain.value = 0.0;	
-	zerogain.connect( audioContext.destination);
- 
 	// Debug visualizer
     analyser1 = audioContext.createAnalyser();
     analyser1.fftSize = 2048;
     analyser2 = audioContext.createAnalyser();
     analyser2.fftSize = 2048;
-
-    // Connect the analysers to a zeroed gain node so it will play
-    analyser1.connect( zerogain );
-    analyser2.connect( zerogain );
 
     analyserView1 = new AnalyserView("view1", "overlay1");
     analyserView1.initByteBuffer( analyser1 );
