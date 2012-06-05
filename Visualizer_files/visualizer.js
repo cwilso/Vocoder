@@ -57,7 +57,7 @@ AnalyserView = function(canvasElementID, overlayElementID) {
 
     this.sonogram3DWidth = 256;
     this.sonogram3DHeight = 256;
-    this.sonogram3DGeometrySize = 10;
+    this.sonogram3DGeometrySize = 12;
     this.freqByteData = 0;
     this.texture = 0;
     this.TEXTURE_HEIGHT = 256;
@@ -116,7 +116,7 @@ AnalyserView.prototype.initGL = function() {
     var cameraController = new CameraController(canvas);
     this.cameraController = cameraController;
     
-    cameraController.xRot = -45; //-55;
+    cameraController.xRot = -30; //-55;
     cameraController.yRot = 0;
     gl.clearColor(backgroundColor[0], backgroundColor[1], backgroundColor[2], backgroundColor[3]);
     gl.enable(gl.DEPTH_TEST);

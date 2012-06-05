@@ -1,3 +1,33 @@
+/*
+ * Copyright (c) 2012 The Chromium Authors. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *    * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *    * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *    * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 var CANVAS_WIDTH = 2000;
 var CANVAS_HEIGHT = 120;
 
@@ -23,6 +53,7 @@ var heterodynes = null;		// gain nodes used to multiply bandpass X sine
 var powers = null;			// gain nodes used to multiply prev out by itself
 var lpFilters = null;		// tuned LP filters to remove doubled copy of product
 var lpFilterPostGains = null; 	// gain nodes for tuning input to waveshapers
+var bandAnalysers = null;	// these are just used to drive the visual vocoder band drawing
 var carrierBands = null;	// tuned bandpass filters, same as modFilterBands but in carrier chain
 var carrierFilterPostGains = null;	// post-bandpass gain adjustment
 var carrierBandGains = null;	// these are the "control gains" driven by the lpFilters
@@ -142,6 +173,10 @@ function initBandpassFilters() {
 
 	if (lpFilterPostGains == null)
 		lpFilterPostGains = new Array();
+
+	if (bandAnalysers == null)
+		bandAnalysers = new Array();
+
 	
 	if (carrierBands == null)
 		carrierBands = new Array();
@@ -179,6 +214,7 @@ function initBandpassFilters() {
 	carrierBands.length = 0;
 	carrierFilterPostGains.length = 0;
 	carrierBandGains.length = 0;
+	bandAnalysers.length = 0;
 
 	var outputGain = audioContext.createGainNode();
 	outputGain.connect(audioContext.destination);
@@ -252,6 +288,12 @@ function initBandpassFilters() {
    		var waveshaper = audioContext.createWaveShaper();
 		waveshaper.curve = waveShaperCurve;
 		lpFilterPostGain.connect( waveshaper );
+
+		// create an analyser to drive the vocoder band drawing
+		var analyser = audioContext.createAnalyser();
+		analyser.fftSize = 128;	//small, shouldn't matter
+		waveshaper.connect(analyser);
+		bandAnalysers.push( analyser );
 
 		// Create the bandpass filter in the carrier chain
 		var carrierFilter = audioContext.createBiquadFilter();
@@ -371,11 +413,16 @@ function drawVocoderGains() {
   	vocoderCanvas.fillStyle = '#F6D565';
   	vocoderCanvas.lineCap = 'round';
 	var binWidth = (GAIN_WIDTH / numVocoderBands)/2;
+	var value;
+
+	var sample = new Uint8Array(1); // should only need one sample
 
 	// Draw rectangle for each vocoder bin.
 	for (var i = 0; i < numVocoderBands; i++) {
     	vocoderCanvas.fillStyle = "hsl( " + Math.round((i*360)/numVocoderBands) + ", 100%, 50%)";
-    	vocoderCanvas.fillRect(i * binWidth, CANVAS_HEIGHT, binWidth, -carrierBandGains[i].gain.value * 2 * CANVAS_HEIGHT );
+    	bandAnalysers[i].getByteTimeDomainData(sample);
+    	value = ((1.0 * sample[0]) - 128.0) / 128;
+    	vocoderCanvas.fillRect(i * binWidth, CANVAS_HEIGHT, binWidth, -value * 2 * CANVAS_HEIGHT );
 	}
 }
 

@@ -367,7 +367,7 @@ window.onkeydown=keyevent();
 </head>
 
 <body>
-	<div id="sliders"></div>
+
 	<div class="panel notready" id="modulator">
 		<div class="headertext">Modulator: <span class="sndurl" id="modurl">No modulator file loaded.</span>
 			<button class="play" onclick="play();">Vocode</button>
@@ -378,10 +378,7 @@ window.onkeydown=keyevent();
 	</div>
 	<div class="panel notready" id="carrier">
 		<div class="headertext">Carrier: <span class="sndurl" id="carurl">No carrier file loaded.</span><button onclick="startLoadingCarrier( 'Saw.ogg' );">Sawtooth</button><button onclick="startLoadingCarrier( 'Noise.ogg' );">Noise</button></div>
-	<div class="panel" id="output">
-		<div class="headertext">Debug channel</div>
-		<canvas id="ocanvas" width=1200 height=120></canvas>
-	</div>
+
 	<div class="panel" id="vocoder" >
 		<div class="headertext">Vocoder Bands</div>
 		<canvas id="vcanvas" width=1200 height=120></canvas>
@@ -424,7 +421,11 @@ window.onkeydown=keyevent();
 
 
 	</div>
-
+	<div class="panel" id="output">
+		<div class="headertext">Debug channel</div>
+		<canvas id="ocanvas" width=1200 height=120></canvas>
+	</div>
+	<div id="sliders"></div>
 </div>
 
 </body>
