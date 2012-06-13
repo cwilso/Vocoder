@@ -42,9 +42,16 @@ var outputAnalyser = null;
 var modulatorInput = null;
 var carrierInput = null;
 
-// noise node
+// noise node added to the carrier signal
 var noiseBuffer = null;
 var noiseNode = null;
+var noiseGain = null;
+
+// Wavetable oscillator stuff
+var oscillatorNode = null;
+var oscillatorGain = null;
+var FOURIER_SIZE = 4096;
+var wavetable = null;
 
 // These are the arrays of nodes - the "columns" across the frequency band "rows"
 var modFilterBands = null;		// tuned bandpass filters
@@ -63,33 +70,14 @@ var carrierCanvas = null;
 var outputCanvas = null;
 var DEBUG_BAND = 5;		// current debug band - used to display a filtered signal
 
-var vocoderBands = [	// The vocoder bands.
-// { Q: 200.0, frequency: 50	},
-{ Q: 200.0, frequency: 158 		},
-{ Q: 200.0, frequency: 200	},
-{ Q: 200.0, frequency: 252 	},
-{ Q: 200.0, frequency: 317	},
-{ Q: 200.0, frequency: 400  },
-{ Q: 200.0, frequency: 504	},
-{ Q: 100.0, frequency: 635  },
-{ Q: 200.0, frequency: 800	},
-{ Q:  50.0, frequency: 1008 },
-{ Q: 200.0, frequency: 1270	},
-{ Q:  30.0, frequency: 1600 },
-{ Q: 200.0, frequency: 2016	},
-{ Q:   8.0, frequency: 2504 },
-{ Q: 200.0, frequency: 3200	},
-{ Q: 200.0, frequency: 4032	},
-{ Q: 200.0, frequency: 5080	}
-];
-var numVocoderBands = 16;
+var vocoderBands;
+var numVocoderBands;
+
+var hpFilterGain = null;
 
 // this function will algorithmically re-calculate vocoder bands, distributing evenly
 // from startFreq to endFreq, splitting evenly (logarhythmically) into a given numBands.
 // The function places this info into the global vocoderBands and numVocoderBands variables.
-var newVocoderBands = null;
-var numNewVocoderBands = 0;
-
 function generateVocoderBands( startFreq, endFreq, numBands ) {
 	// Remember: 1200 cents in octave, 100 cents per semitone
 
@@ -111,26 +99,6 @@ function generateVocoderBands( startFreq, endFreq, numBands ) {
 
 generateVocoderBands( 55, 7040, 28 );
 
-/*  Moog vocoder bands - these are the boundaries between bands, not the bands' center freqs.
-50 		
-158		
-200
-252
-317
-400
-504
-635
-800
-1008
-1270
-1600
-2016
-2504
-3200
-4032
-5080
-*/
-
 function loadNoiseBuffer() {	// create a 5-second buffer of noise
     var lengthInSamples =  5 * audioContext.sampleRate;
     noiseBuffer = audioContext.createBuffer(1, lengthInSamples, audioContext.sampleRate);
@@ -146,15 +114,6 @@ function initBandpassFilters() {
 	// may not already be created.  Create placeholder nodes for them.
 	modulatorInput = audioContext.createGainNode();
 	carrierInput = audioContext.createGainNode();
-
-/*
-	modFilterBands = null;		// tuned bandpass filters
-	multipliers = null;		// gain nodes used to multiply bandpass X sine
-	heterodynes = null;		// gain nodes used to multiply prev out by itself
-	lpFilters = null;		// tuned LP filters to remove doubled copy of product
-	carrierBands = null;	// tuned bandpass filters connected to carrier
-	carrierGains = null;	// gains on carrier bandpass filters
-*/
 
 	if (modFilterBands == null)
 		modFilterBands = new Array();
@@ -191,15 +150,15 @@ function initBandpassFilters() {
     generateMirrorCurve(waveShaperCurve);	// Populate with a curve that soft-clips AND does an abs()
 	
 	// Set up a high-pass filter to add back in the fricatives, etc.
+	// (this isn't used in the "production" version, as I hid the slider)
 	var hpFilter = audioContext.createBiquadFilter();
 	hpFilter.type = hpFilter.HIGHPASS;	// Bandpass filter
 	hpFilter.frequency.value = 8000; // or use vocoderBands[numVocoderBands-1].frequency;
 	hpFilter.Q.value = 1; // 	no peaking
 	modulatorInput.connect( hpFilter);
 
-	var hpFilterGain = audioContext.createGainNode();
+	hpFilterGain = audioContext.createGainNode();
 	hpFilterGain.gain.value = 0.0;
-
 
 	hpFilter.connect( hpFilterGain );
 	hpFilterGain.connect( audioContext.destination );
@@ -363,6 +322,20 @@ function initBandpassFilters() {
 
 	outputGain.connect( analyser2 );
 	analyserView2.setOverlayText( "Output" );
+
+	// Now set up our wavetable stuff.
+	var real = new Float32Array(FOURIER_SIZE);
+	var imag = new Float32Array(FOURIER_SIZE);
+	real[0] = 0.0;
+	imag[0] = 0.0;
+	for (var i=1; i<FOURIER_SIZE; i++) {
+		real[i]=1.0;
+		imag[i]=1.0;
+	}
+
+	wavetable = audioContext.createWaveTable(real, imag);
+	loadNoiseBuffer();
+
 }
 
 
