@@ -1,377 +1,85 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html class="no-js" lang="en">
 <head>
-<title>Vocoder</title>
-<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-<!-- <link rel="shortcut icon" href="Speaker.ico"> -->
+	<meta charset="utf-8" />
+	<title>Vocoder</title>
 
-<style>
-.play { background: lime; }
-.panel {
-   width: 100%;
-   border: 1px solid black;
-   aheight: 145px;
-}
-.hover, .hover * {
-	border: 5px solid red;
-}
-.notready .sndurl { color: red }
-canvas { aborder: 1px solid blue}
-div.overlay { position: absolute; z-index: 10;}
-</style>
+	<link rel="shortcut icon" href="favicon.ico" />
+	<link rel="stylesheet" href="css/reset.css" />
+	<link rel="stylesheet" href="css/main.css" />
 
-<!-- The code Vocoder library -->
-<script type="text/javascript" src="vocoder.js"></script>
-
-<!-- Debugging/tweaking sliders library -->
-<script type="text/javascript" src="sliders.js"></script>
-
-<!-- WaveShaper curve generation library -->
-<script type="text/javascript" src="waveshaper.js"></script>
-
-<!-- Jazz MIDI plugin init and MIDI message handler -->
-<script type="text/javascript" src="midi.js"></script>
-
-<!-- Visualizer stuff -->
-<script type="text/javascript" src="./Visualizer_files/events.js"></script>
-
-<!-- WebGL stuff -->
-<script src="./Visualizer_files/base.js"></script>
-<script src="./Visualizer_files/cameracontroller.js"></script>
-
-<!-- TODO(kbr): remove this dependency -->
-<script src="./Visualizer_files/matrix4x4.js"></script>
-
-<!-- Visualizer GL library -->
-<script type="text/javascript" src="./Visualizer_files/visualizer.js"></script>
-<script type="text/javascript" src="./Visualizer_files/shader.js"></script>
-
-
-<script type="text/javascript">
-var audioContext = null;
-var modulatorBuffer = null;
-var carrierBuffer = null;
-var modulatorNode = null;
-var carrierNode = null;
-var vocoding = false;
-
-
-// Debug visualizer stuff here
-var analyser1;
-var analyser2;
-var analyserView1;
-var analyserView2;
-
-o3djs.require('o3djs.shader');
-
-
-function playModulator() {
-	modulatorNode = audioContext.createBufferSource();
-	modulatorNode.buffer = modulatorBuffer;
-	
-	vocoding = false;
-	modulatorNode.connect( audioContext.destination );
-	modulatorNode.noteOn(0);
-
-	modulatorNode.connect( analyser1 );
-	analyserView1.setOverlayText( "Modulator" );
-
-  	window.webkitRequestAnimationFrame( updateAnalysers );
-	window.setTimeout( cancelVocoderUpdates, modulatorNode.buffer.duration * 1000 + 20 );
-}
-
-function vocodeUsingWaveTable() {
-	oscillatorNode = audioContext.createOscillator();
-	oscillatorNode.type = oscillatorNode.CUSTOM;
-	oscillatorNode.frequency.value = 110;
-	oscillatorNode.setWaveTable(wavetable);
-	addSingleValueSlider( "Wavetable detune", oscillatorNode.detune.value, -1200.0, 1200.0, oscillatorNode, updateSingleDetune );
-
-	oscillatorGain = audioContext.createGainNode();
-	oscillatorGain.gain.value = 70.0;
-	oscillatorNode.connect(oscillatorGain);
-	addSingleValueSlider( "WaveTable gain", oscillatorGain.gain.value, 0.0, 100.0, oscillatorGain, updateSingleGain );
-
-	noiseNode = audioContext.createBufferSource();
-	noiseNode.buffer = noiseBuffer;
-	noiseNode.loop = true;
-	noiseGain = audioContext.createGainNode();
-	noiseGain.gain.value = 0.3;
-	addSingleValueSlider( "WaveTable noise gain", noiseGain.gain.value, 0.0, 1.0, noiseGain, updateSingleGain );
-	noiseNode.connect(noiseGain);
-
-	oscillatorGain.connect(carrierInput);
-	noiseGain.connect(carrierInput);
-	oscillatorNode.noteOn(0);
-	noiseNode.noteOn(0);
-	vocoding = true;
-
-	modulatorNode = audioContext.createBufferSource();
-	modulatorNode.buffer = modulatorBuffer;
-	modulatorNode.connect( modulatorInput );
-	modulatorNode.noteOn(0);
-
- 	window.webkitRequestAnimationFrame( updateAnalysers );
-}
-
-function stop() {
-	if (oscillatorNode && oscillatorNode.noteOff)
-		oscillatorNode.noteOff(0);
-	if (noiseNode)
-		noiseNode.noteOff(0);
-	if (modulatorNode)
-		modulatorNode.noteOff(0);
-	if (carrierNode)
-		carrierNode.noteOff(0);
-	vocoding = false;
-	window.webkitCancelAnimationFrame( rafID );
-}
-
-function setupVocoderGraph() {
-//	clearSliders();
-
-	outputAnalyser = audioContext.createAnalyser();
-	outputAnalyser.fftSize = 2048;
-	outputAnalyser.smoothingTimeConstant = 0.0;
-	initBandpassFilters();
-}
-
-function vocodeUsingCarrierBuffer() {
-	if (!modulatorBuffer || !carrierBuffer) {
-		console.log("Error - buffers not loaded");
-		return;
-	}
-
-	vocoding = true;
-
-	carrierNode = audioContext.createBufferSource();
-	carrierNode.buffer = carrierBuffer;
-	carrierNode.loop = true;
-	carrierNode.connect( carrierInput );
-	
-	modulatorNode = audioContext.createBufferSource();
-	modulatorNode.buffer = modulatorBuffer;
-	modulatorNode.connect( modulatorInput );
-
-	carrierNode.noteOn(0);
-	modulatorNode.noteOn(0);
-
-  	window.webkitRequestAnimationFrame( updateAnalysers );
-	window.setTimeout( cancelVocoderUpdates, modulatorNode.buffer.duration * 1000 + 20 );
-}
-
-function loadModulator( buffer ) {
-	modulatorBuffer = buffer;
-	var e = document.getElementById("modulator");
-	e.classList.remove("notready");  
-	e.classList.add("ready");
-}
-
-function loadCarrier( buffer ) {
-	carrierBuffer = buffer;
-	var e = document.getElementById("carrier");
-	e.classList.remove("notready");  
-	e.classList.add("ready");
-	if (vocoding) {
-		newCarrierNode = audioContext.createBufferSource();
-		newCarrierNode.buffer = carrierBuffer;
-		newCarrierNode.loop = true;
-		newCarrierNode.connect( carrierInput );
-		carrierNode.disconnect();
-		newCarrierNode.noteOn(0);
-		carrierNode.noteOff(0);
-		carrierNode = newCarrierNode;	
-	}
-}
-
-function downloadAudioFromURL( url, cb ){
-	var request = new XMLHttpRequest();
-  	request.open('GET', url, true);
-  	request.responseType = 'arraybuffer';
-
-  	// Decode asynchronously
-  	request.onload = function() {
-    	audioContext.decodeAudioData( request.response, function(buffer) {
-      		cb(buffer);
-    	}, function(){alert("error loading!");});
-  	}
-  	request.send();
-}
-
-function startLoadingModulator( url ) {
-	modulatorBuffer = null;
-	var e = document.getElementById("modurl");
-	e.innerHTML = '"' + url + '"';
-	e = document.getElementById("modulator");
-	e.classList.remove("ready");  
-	e.classList.add("notready");
-	downloadAudioFromURL( url, loadModulator );
-}
-
-function startLoadingCarrier( url ) {
-	carrierBuffer = null;
-	var e = document.getElementById("carurl");
-	e.innerHTML = '"' + url + '"';
-	e = document.getElementById("carrier");
-	e.classList.remove("ready");  
-	e.classList.add("notready");
-	downloadAudioFromURL( url, loadCarrier );
-}
-
-// Set up the page as a drop site for audio files. When an audio file is
-// dropped on the page, it will be auto-loaded as an AudioBufferSourceNode.
-function initDragDropOfAudioFiles() {
-	var mod = document.getElementById("modulator");
-	
-	mod.ondragenter = function () { this.classList.add("hover"); return false; };
-	mod.ondragleave = function () { this.classList.remove("hover"); return false; };
-	mod.ondrop = function (e) {
-  		this.classList.remove("hover");
-  		e.preventDefault();
-		modulatorBuffer = null;
-		var m = document.getElementById("modurl");
-		m.innerHTML = '"' + e.dataTransfer.files[0].name + '"';
-		mod.classList.remove("ready");  
-		mod.classList.add("notready");
-
-	  	var reader = new FileReader();
-	  	reader.onload = function (event) {
-	  		audioContext.decodeAudioData( event.target.result, function(buffer) {
-	    		loadModulator( buffer );
-	  		}, function(){alert("error loading!");} ); 
-
-	  	};
-	  	reader.onerror = function (event) {
-	  		alert("Error: " + reader.error );
-		};
-	  	reader.readAsArrayBuffer(e.dataTransfer.files[0]);
-	  	return false;
-	};	
-	var car = document.getElementById("carrier");
-	
-	car.ondragenter = function () { this.classList.add("hover"); return false; };
-	car.ondragleave = function () { this.classList.remove("hover"); return false; };
-	car.ondrop = function (e) {
-  		this.classList.remove("hover");
-  		e.preventDefault();
-		carrierBuffer = null;
-		var c = document.getElementById("carurl");
-		c.innerHTML = '"' + e.dataTransfer.files[0].name + '"';
-		car.classList.remove("ready");  
-		car.classList.add("notready");
-
-	  	var reader = new FileReader();
-	  	reader.onload = function (event) {
-	  		audioContext.decodeAudioData( event.target.result, function(buffer) {
-	    		loadCarrier( buffer );
-	  		}, function(){alert("error loading!");} ); 
-
-	  	};
-	  	reader.onerror = function (event) {
-	  		alert("Error: " + reader.error );
-		};
-	  	reader.readAsArrayBuffer(e.dataTransfer.files[0]);
-	  	return false;
-	};	
-}
-
-// Initialization function for the page.
-function init() {
-  	try {
-    	audioContext = new webkitAudioContext();
-  	}
-  	catch(e) {
-    	alert('Web Audio API is not supported in this browser');
-  	}
-
-	initDragDropOfAudioFiles();	// set up panels as drop sites for audio files
-
-	outputCanvas = document.getElementById("ocanvas").getContext('2d');
-	vocoderCanvas = document.getElementById("vcanvas").getContext('2d');
-
-	startLoadingModulator( "gettysburg.ogg" );
-	startLoadingCarrier( "Saw.ogg" );
-
-	// Debug visualizer
-    analyser1 = audioContext.createAnalyser();
-    analyser1.fftSize = 2048;
-    analyser2 = audioContext.createAnalyser();
-    analyser2.fftSize = 2048;
-
-    analyserView1 = new AnalyserView("view1", "overlay1");
-    analyserView1.initByteBuffer( analyser1 );
-    analyserView2 = new AnalyserView("view2", "overlay2");
-    analyserView2.initByteBuffer( analyser2 );
-
-    // Set up the vocoder chains
-    setupVocoderGraph();
-
-}
-
-function keyevent( event ) {
-	if (event)
-		return;
-}
-
-window.onload=init;
-window.onkeydown=keyevent();
-
-</script>
-
-
-
-
-
+	<script src="js/jquery-1.7.2.min.js"></script>
+	<script src="js/jquery-ui-1.8.21.custom.min.js"></script>
+	<script src="js/ui.js"></script>
 </head>
-
 <body>
-
-	<div class="panel notready" id="modulator">
-		<div class="headertext">Modulator: <span class="sndurl" id="modurl">No modulator file loaded.</span>
-			<button class="play" onclick="vocodeUsingCarrierBuffer();">Vocode</button>
-			<button class="play" onclick="vocodeUsingWaveTable();">Vocode using WaveTable synthesis voice</button>
-			<button class="play" onclick="playModulator();">Play Modulator only</button>
-			<button onclick="stop();">Stop</button>
-		</div>
-	</div>
-	<div class="panel notready" id="carrier">
-		<div class="headertext">Carrier: <span class="sndurl" id="carurl">No carrier file loaded.</span><button onclick="startLoadingCarrier( 'Saw.ogg' );">Sawtooth</button><button onclick="startLoadingCarrier( 'Noise.ogg' );">Noise</button></div>
-
-	<div class="panel" id="vocoder" >
-		<div class="headertext">Vocoder Bands</div>
-		<canvas id="vcanvas" width=1200 height=120></canvas>
-	</div>
-
-
-	<!-- Debugging analyser -->
-<div id="controls">
-<!-- Analyser type -->
-<input type="radio" name="radioSet" value="data" 
-	onmousedown="analyserView1.setAnalysisType(ANALYSISTYPE_FREQUENCY); analyserView2.setAnalysisType(ANALYSISTYPE_FREQUENCY);">Frequency
-<input type="radio" name="radioSet" value="data" 
-	onmousedown="analyserView1.setAnalysisType(ANALYSISTYPE_SONOGRAM); analyserView2.setAnalysisType(ANALYSISTYPE_SONOGRAM);">Sonogram
-<input type="radio" name="radioSet" value="data" checked="checked" 
-	onmousedown="analyserView1.setAnalysisType(ANALYSISTYPE_3D_SONOGRAM); analyserView2.setAnalysisType(ANALYSISTYPE_3D_SONOGRAM);">3D Sonogram
-<input type="radio" name="radioSet" value="data" 
-	onmousedown="analyserView1.setAnalysisType(ANALYSISTYPE_WAVEFORM); analyserView2.setAnalysisType(ANALYSISTYPE_WAVEFORM);">Waveform
-</div>
-<!-- Canvas tag for WebGL output -->
-<div class="overlay" id="overlay1"></div><canvas id="view1" width="1280px" height="200px"></canvas>
-<div class="overlay" id="overlay2"></div><canvas id="view2" width="1280px" height="200px"></canvas>
-
-
-	</div>
-	<div class="panel" id="output">
-		<div class="headertext">Debug channel</div>
-		<canvas id="ocanvas" width=1200 height=120></canvas>
-	</div>
-	<div id="sliders"></div>
-</div>
-		MIDI Input:
-		<select id=midiIn onchange='changeMidi();'>
-			<option value="">Not connected</option>
-		</select>
-		<div id="msg"></div>
-
+	<div id="main" class="container">
+		<header id="header">
+			<img src="img/logo.png" alt="Web Audio Playground: A demonstration of the web audio API // v 1.0" />	
+		</header>
+		<section id="content">
+			<div id="modules">
+				<div class="module modulator has-footer">
+					<div class="content">
+						<h6>Modulator</h6>	
+						<a href="#" class="preview-link"><img src="img/ico-preview.gif" alt="Preview icon" /> Preview</a>
+					</div>
+					<footer>
+						<a href="#" class="fight-club left">Fight Club</a>
+						<a href="#" class="load-file">Load File...</a>
+					</footer>
+				</div>
+				<div class="module carrier has-footer">
+					<div class="content">
+						<h6>Carrier</h6>	
+						<div class="control-group">
+							<div class="slider-info">
+								<span class="label">Signal Level</span>
+								<span class="value">0.22</span>
+							</div>
+							<div class="slider"></div>
+						</div>
+						<div class="control-group">
+							<div class="slider-info">
+								<span class="label">Noise Level</span>
+								<span class="value">0.22</span>
+							</div>
+							<div class="slider"></div>
+						</div>
+						<div class="control-group last">
+							<div class="slider-info">
+								<span class="label">Synth Detune</span>
+								<span class="value">1043</span>
+							</div>
+							<div class="slider"></div>
+						</div>
+						<a href="#" class="preview-link"><img src="img/ico-preview.gif" alt="Preview icon" /> Preview</a>
+					</div>
+					<footer>
+						<a href="#" class="standard left top active">Standard</a>
+						<a href="#" class="load-file top">Load File...</a>
+						<a href="#" class="sawtooth left">Sawtooth</a>
+						<a href="#" class="wavetable">Wavetable</a>
+					</footer>
+				</div>
+			</div> <!-- /#modules -->
+			<div id="connection">
+				<a href="#" id="play">Play</a>
+			</div> <!-- /#connection -->
+			<div id="results" class="container">
+				<h2 class="before">Before</h2>
+				<div id="result-top">
+					<img src="../img/results-top.png" alt="Temp placeholder" />
+				</div>
+				<div id="result-middle">
+					<img src="../img/results-middle.png" alt="Temp placeholder" />
+				</div>
+				<div id="result-bottom">
+					<img src="../img/results-bottom.png" alt="Temp placeholder" />
+				</div>
+				<h2 class="after">After</h2>
+			</div> <!-- /#results -->
+		</section>
+	</div> <!-- /#main -->
 </body>
 </html>
