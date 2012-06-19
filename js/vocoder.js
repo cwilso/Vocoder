@@ -28,8 +28,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-var CANVAS_WIDTH = 2000;
-var CANVAS_HEIGHT = 120;
+var CANVAS_WIDTH = 582;
+var CANVAS_HEIGHT = 190;
 
 var FILTER_QUALITY = 6;  // The Q value for the carrier and modulator filters
 
@@ -49,7 +49,7 @@ var noiseGain = null;
 
 // Wavetable oscillator stuff
 var oscillatorNode = null;
-var oscillatorGain = null;
+var carrierSignalGain = null;
 var FOURIER_SIZE = 4096;
 var wavetable = null;
 
@@ -96,8 +96,6 @@ function generateVocoderBands( startFreq, endFreq, numBands ) {
 
 	numVocoderBands = numBands;
 }
-
-generateVocoderBands( 55, 7040, 28 );
 
 function loadNoiseBuffer() {	// create a 5-second buffer of noise
     var lengthInSamples =  5 * audioContext.sampleRate;
@@ -284,15 +282,11 @@ function initBandpassFilters() {
 
 		bandGain.connect( outputGain );
 
-		// show the output
-//		bandGain.connect( analyser2 );
-//		analyserView2.setOverlayText( "Output" );
-
 		// Debugging visualizer
 		if ( i == DEBUG_BAND ) {
 //			modulatorFilterPostGain.connect( carrierAnalyser );
 
-			modulatorFilterPostGain.connect( outputAnalyser );
+//			modulatorFilterPostGain.connect( outputAnalyser );
 
 //			carrierFilterPostGain.connect( analyser1 );
 //			analyserView1.setOverlayText( "carrierFilterPostGain" );
@@ -318,10 +312,7 @@ function initBandpassFilters() {
 	addSingleValueSlider( "output gain", outputGain.gain.value, 0.0, 10.0, outputGain, updateSingleGain );
 
 	modulatorInput.connect( analyser1 );
-	analyserView1.setOverlayText( "Modulator input" );
-
 	outputGain.connect( analyser2 );
-	analyserView2.setOverlayText( "Output" );
 
 	// Now set up our wavetable stuff.
 	var real = new Float32Array(FOURIER_SIZE);
@@ -338,6 +329,7 @@ function initBandpassFilters() {
 
 }
 
+/* used for the old debug visualizer I don't currently use 
 
 function updateAnalyser( analyserNode, drawContext ) {
 	var SPACER_WIDTH = 2;
@@ -380,12 +372,13 @@ function updateAnalyser( analyserNode, drawContext ) {
 //	console.log("\n" + analyserNode.frequencyBinCount);
 }
 
+*/
+
 function drawVocoderGains() {
-	var GAIN_WIDTH = 1200;
-	vocoderCanvas.clearRect(0, 0, GAIN_WIDTH, CANVAS_HEIGHT);
+	vocoderCanvas.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   	vocoderCanvas.fillStyle = '#F6D565';
   	vocoderCanvas.lineCap = 'round';
-	var binWidth = (GAIN_WIDTH / numVocoderBands)/2;
+	var binWidth = (CANVAS_WIDTH / numVocoderBands)/2;
 	var value;
 
 	var sample = new Uint8Array(1); // should only need one sample
@@ -405,12 +398,13 @@ function cancelVocoderUpdates() {
 	window.webkitCancelAnimationFrame( rafID );
 
 	//turn off the carrier loop when the modulator is done playing
-	carrierNode.noteOff(0); 
+	if (carrierNode)
+		carrierNode.noteOff(0); 
 }
 
 function updateAnalysers(time) {
-	if ( outputAnalyser )
-		updateAnalyser( outputAnalyser, outputCanvas );
+//	if ( outputAnalyser )
+//		updateAnalyser( outputAnalyser, outputCanvas );
 		
 	analyserView1.doFrequencyAnalysis( analyser1 );
 	analyserView2.doFrequencyAnalysis( analyser2 );

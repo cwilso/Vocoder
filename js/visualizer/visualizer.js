@@ -46,9 +46,8 @@ function create3DDebugContext(context) {
  * Class AnalyserView
  */
 
-AnalyserView = function(canvasElementID, overlayElementID) {
+AnalyserView = function(canvasElementID) {
     this.canvasElementID = canvasElementID;
-    this.overlayElementID = overlayElementID;
     
     // NOTE: the default value of this needs to match the selected radio button
 
@@ -431,9 +430,3 @@ AnalyserView.prototype.drawGL = function() {
     gl.disableVertexAttribArray(texCoordLoc);
 }
 
-AnalyserView.prototype.setOverlayText = function( text ) {
-    var e = document.getElementById( this.overlayElementID );
-    while (e.childNodes.length)
-        e.removeChild( e.childNodes[0] );
-    e.appendChild( document.createTextNode( text ));
-}
