@@ -17,19 +17,54 @@ function midiProc(t,a,b,c) {
         // we don't currently need note off
 //        lastNote = -1;
 //    }
-  } else if (cmd == 9) {
-    var noteNumber = b - 60;
-    if (oscillatorNode)
-        oscillatorNode.detune.value = noteNumber * 100;
-//        lastNote = b;
+  } else if (cmd == 9) {  // note on message
+    if (channel == 0 ) { // Change oscillator detune.
+      var noteNumber = b - 60;
+      var detuneValue = noteNumber * 100;
+      var detunegroup = document.getElementById("detunegroup");
+      $( detunegroup.children[1] ).slider( "value", detuneValue );
+      updateSlider( detunegroup, detuneValue, " cents" );
+      if (oscillatorNode)
+        oscillatorNode.detune.value = detuneValue;
+    } else if (channel == 1) { //pads - play previews
+      if (b==48)
+        previewModulator(); // is a toggle.
+      else if (b==49)
+        previewCarrier(); // is a toggle.
+      else if (b==44)
+        vocode(); // is a toggle.
+    }
   } else if (cmd == 11) { // continuous controller
-    if (b == 1) {
-      noiseGain.gain.value = c / 63.5; // 0.0-2.0
-    } else if (b == 2) {
+    if (b == 1) {   // CC1: Modulator gain level
+      var value = Math.floor( (100 * c) / 63.5) / 50; // 0.0-4.0
+      var modgaingroup = document.getElementById("modgaingroup");
+      $( modgaingroup.children[1] ).slider( "value", value );
+      updateSlider( modgaingroup, value, "" );
+      if (modulatorGain)
+        modulatorGain.gain.value = value;
+    } else if (b == 5) {  //  CC2: Carrier sample level
+      var sampleValue = Math.floor( (100 * c) / 63.5) / 100; // 0.0-2.0
+      var samplegroup = document.getElementById("samplegroup");
+      $( samplegroup.children[1] ).slider( "value", sampleValue );
+      updateSlider( samplegroup, sampleValue, "" );
+      if (carrierSampleGain)
+        carrierSampleGain.gain.value = sampleValue;
+    } else if (b == 6) {  //  CC2: Carrier synth level
+      var synthValue = Math.floor( (100 * c) / 63.5) / 100; // 0.0-2.0
+      var synthgroup = document.getElementById("synthgroup");
+      $( synthgroup.children[1] ).slider( "value", synthValue );
+      updateSlider( synthgroup, synthValue, "" );
+      if (oscillatorGain)
+        oscillatorGain.gain.value = synthValue;
+    } else if (b == 7) {  //  CC3: Carrier noise level
+      var noiseValue = Math.floor( (100 * c) / 63.5) / 100; // 0.0-2.0
+      var noisegroup = document.getElementById("noisegroup");
+      $( noisegroup.children[1] ).slider( "value", noiseValue );
+      updateSlider( noisegroup, noiseValue, "" );
+      if (noiseGain)
+        noiseGain.gain.value = noiseValue;
+    } else if (b == 8) {
       hpFilterGain.gain.value = c / 63.5; // 0.0-1.0
-    } else if (b == 3) {
-      oscillatorGain.gain.value = c / 1.27; // 0.0-100
-    } else if (b == 4) {
     }
   }
 }

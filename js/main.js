@@ -17,6 +17,8 @@ var FILE = 0, SAWTOOTH=1, WAVETABLE=2, FILENAME=-1;
 
 o3djs.require('o3djs.shader');
 
+var carrierAnalyserNode = null;
+
 function previewCarrier() {
 	if (this.event) 
 		this.event.preventDefault();
@@ -27,26 +29,42 @@ function previewCarrier() {
 		return;
 	}
 
-	if (carrierNode) {	// we must already be playing
-		// TODO: stop vocoding?
-	}
+	if (vocoding)
+		vocode();	// this will shut off the vocoder
+	
+	if (document.getElementById("modulatorpreview").classList.contains("playing") )
+		finishPreviewingModulator();
 	
 	carrierPreviewImg.classList.add("playing");
 	carrierPreviewImg.src = "img/ico-stop.png";
-	carrierNode = audioContext.createBufferSource();
-	carrierNode.buffer = modulatorBuffer;
-	
-	vocoding = false;
-	carrierNode.connect( audioContext.destination );
-	carrierNode.connect( analyser1 );
 
-	carrierNode.noteOn(0);
+	carrierAnalyserNode = audioContext.createGainNode();
+	carrierAnalyserNode.gain.value = 0.25;	// carrier is LOUD.
+	carrierAnalyserNode.connect( audioContext.destination );
+	carrierAnalyserNode.connect( analyser2 );
+
+	createCarriersAndPlay( carrierAnalyserNode );
 
   	window.webkitRequestAnimationFrame( updateAnalysers );
 
-  	if (isBufferSample)
-		window.setTimeout( finishPreviewingCarrier, carrierNode.buffer.duration * 1000 + 20 );
 }
+
+function finishPreviewingCarrier() {
+	var carPreviewImg = document.getElementById("carrierpreview");
+	carPreviewImg.classList.remove("playing");
+	carPreviewImg.src = "img/ico-play.png";
+
+	cancelVocoderUpdates();
+	oscillatorNode.noteOff(0);
+	oscillatorNode = null;
+	noiseNode.noteOff(0);
+	noiseNode = null;
+	carrierSampleNode.noteOff(0);
+	carrierSampleNode = null;
+	carrierAnalyserNode.disconnect();
+	carrierAnalyserNode = null;
+}
+
 
 function previewModulator() {
 	if (this.event) 
@@ -58,10 +76,12 @@ function previewModulator() {
 		return;
 	}
 
-	if (modulatorNode) {	// we must already be playing
-		// TODO: stop vocoding?
-	}
-	
+	if (vocoding)
+		vocode();	// this will shut off the vocoder
+
+	if (document.getElementById("carrierpreview").classList.contains("playing") )
+		finishPreviewingCarrier();
+
 	modPreviewImg.classList.add("playing");
 	modPreviewImg.src = "img/ico-stop.png";
 	modulatorNode = audioContext.createBufferSource();
@@ -86,90 +106,6 @@ function finishPreviewingModulator() {
 	modPreviewImg.src = "img/ico-play.png";
 }
 
-function vocodeUsingWaveTable() {
-	if (this.event) 
-		this.event.preventDefault();
-
-	if (vocoding) {
-		if (oscillatorNode && oscillatorNode.noteOff)
-			oscillatorNode.noteOff(0);
-		if (noiseNode)
-			noiseNode.noteOff(0);
-		if (modulatorNode)
-			modulatorNode.noteOff(0);
-		if (carrierNode)
-			carrierNode.noteOff(0);
-		vocoding = false;
-		window.webkitCancelAnimationFrame( rafID );
-		return;
-	}
-
-	oscillatorNode = audioContext.createOscillator();
-	oscillatorNode.type = oscillatorNode.CUSTOM;
-	oscillatorNode.frequency.value = 110;
-	oscillatorNode.setWaveTable(wavetable);
-	var wavetableSignalGain = audioContext.createGainNode();
-	wavetableSignalGain.gain.value = 70.0;
-	oscillatorNode.connect(wavetableSignalGain);
-
-	carrierSignalGain = audioContext.createGainNode();
-	carrierSignalGain.gain.value = 1.0;
-	wavetableSignalGain.connect(carrierSignalGain);
-
-	noiseNode = audioContext.createBufferSource();
-	noiseNode.buffer = noiseBuffer;
-	noiseNode.loop = true;
-	noiseGain = audioContext.createGainNode();
-	noiseGain.gain.value = 0.3;
-	noiseNode.connect(noiseGain);
-
-	carrierSignalGain.connect(carrierInput);
-	noiseGain.connect(carrierInput);
-	oscillatorNode.noteOn(0);
-	noiseNode.noteOn(0);
-	vocoding = true;
-
-	modulatorNode = audioContext.createBufferSource();
-	modulatorNode.buffer = modulatorBuffer;
-	modulatorNode.connect( modulatorInput );
-	modulatorNode.noteOn(0);
-
- 	window.webkitRequestAnimationFrame( updateAnalysers );
-}
-
-function setupVocoderGraph() {
-//	clearSliders();
-
-	outputAnalyser = audioContext.createAnalyser();
-	outputAnalyser.fftSize = 2048;
-	outputAnalyser.smoothingTimeConstant = 0.0;
-	initBandpassFilters();
-}
-
-function vocodeUsingCarrierBuffer() {
-	if (!modulatorBuffer || !carrierBuffer) {
-		console.log("Error - buffers not loaded");
-		return;
-	}
-
-	vocoding = true;
-
-	carrierNode = audioContext.createBufferSource();
-	carrierNode.buffer = carrierBuffer;
-	carrierNode.loop = true;
-	carrierNode.connect( carrierInput );
-	
-	modulatorNode = audioContext.createBufferSource();
-	modulatorNode.buffer = modulatorBuffer;
-	modulatorNode.connect( modulatorInput );
-
-	carrierNode.noteOn(0);
-	modulatorNode.noteOn(0);
-
-  	window.webkitRequestAnimationFrame( updateAnalysers );
-	window.setTimeout( cancelVocoderUpdates, modulatorNode.buffer.duration * 1000 + 20 );
-}
-
 function loadModulator( buffer ) {
 	modulatorBuffer = buffer;
 	var e = document.getElementById("modulator");
@@ -179,9 +115,6 @@ function loadModulator( buffer ) {
 
 function loadCarrier( buffer ) {
 	carrierBuffer = buffer;
-	var e = document.getElementById("carrier");
-	e.classList.remove("notready");  
-	e.classList.add("ready");
 	if (vocoding) {
 		newCarrierNode = audioContext.createBufferSource();
 		newCarrierNode.buffer = carrierBuffer;
@@ -208,16 +141,22 @@ function downloadAudioFromURL( url, cb ){
   	request.send();
 }
 
-function selectCarrier( type ) {
-	if (this.event) 
-		this.event.preventDefault();
+function selectSawtooth() {
+	if ( wavetableSignalGain )
+		wavetableSignalGain.gain.value = SAWTOOTHBOOST;
+	if (oscillatorNode)
+		oscillatorNode.type = oscillatorNode.SAWTOOTH;
+	document.getElementById("sawtooth").classList.add("active");
+	document.getElementById("wavetable").classList.remove("active");
+}
 
-	switch (type) {
-		case 0:  // selected the file
-		case 1:  // Sawtooth wave
-		case 2:  // Wavetable
-		case -1:  // open new file dialog
-	}
+function selectWavetable() {
+	if ( wavetableSignalGain )
+		wavetableSignalGain.gain.value = WAVETABLEBOOST;
+	if (oscillatorNode)
+		oscillatorNode.setWaveTable( wavetable );
+	document.getElementById("sawtooth").classList.remove("active");
+	document.getElementById("wavetable").classList.add("active");
 }
 
 function setModulatorFileName( url ) {
@@ -288,10 +227,7 @@ function initDragDropOfAudioFiles() {
   		this.classList.remove("hover");
   		e.preventDefault();
 		carrierBuffer = null;
-		var c = document.getElementById("carurl");
-		c.innerHTML = '"' + e.dataTransfer.files[0].name + '"';
-		car.classList.remove("ready");  
-		car.classList.add("notready");
+		setCarrierFileName( e.dataTransfer.files[0].name );
 
 	  	var reader = new FileReader();
 	  	reader.onload = function (event) {
@@ -308,36 +244,52 @@ function initDragDropOfAudioFiles() {
 	};	
 }
 
-function updateSlider(event, ui, units) {
-	var e = event.target;
-	var group = null;
-	while (!e.classList.contains("module")) {
-		if (e.classList.contains("control-group"))
-			group = e;
-		e = e.parentNode;
+function updateSlider( element, value, units) {
+	while (!element.classList.contains("module")) {
+		if (element.classList.contains("control-group")) {
+			//TODO: yes, this is lazy coding, and fragile.
+			element.children[0].children[1].innerText = "" + value + units;
+			return;
+		}
+		element = element.parentNode;
 	}
-
-	//TODO: yes, this is lazy coding, and fragile.
-	var output = group.children[0].children[1];
-
-	// update the value text
-	output.innerText = "" + ui.value + units;
 }
 
-function onUpdateSignalLevel(event, ui) {
-	updateSlider(event, ui, this.units );
-	if (carrierSignalGain)
-		carrierSignalGain.gain.value = ui.value;
+function onUpdateModGain(event, ui) {
+	updateSlider( event.target, ui.value, this.units );
+	modulatorGainValue = ui.value;
+	if (modulatorGain)
+		modulatorGain.gain.value = ui.value;
 }
 
+// sample-based carrier
+function onUpdateSampleLevel(event, ui) {
+	updateSlider( event.target, ui.value, this.units );
+	carrierSampleGainValue = ui.value;
+	if (carrierSampleGain)
+		carrierSampleGain.gain.value = ui.value;
+}
+
+// noise in carrier
+function onUpdateSynthLevel(event, ui) {
+	updateSlider( event.target, ui.value, this.units );
+	oscillatorGainValue = ui.value;
+	if (oscillatorGain)
+		oscillatorGain.gain.value = ui.value;
+}
+
+// noise in carrier
 function onUpdateNoiseLevel(event, ui) {
-	updateSlider(event, ui, this.units );
+	updateSlider( event.target, ui.value, this.units );
+	noiseGainValue = ui.value;
 	if (noiseGain)
 		noiseGain.gain.value = ui.value;
 }
 
+// detuning for wavetable and sawtooth oscillators
 function onUpdateDetuneLevel(event, ui) {
-	updateSlider(event, ui, this.units );
+	updateSlider( event.target, ui.value, this.units );
+	oscillatorDetuneValue = ui.value;
 	if (oscillatorNode)
 		oscillatorNode.detune.value = ui.value;
 }
@@ -347,6 +299,13 @@ function loadModulatorFile() {
 		this.event.preventDefault();
 
 	alert("Try dropping a file onto the modulator.");
+}
+
+function loadCarrierFile() {
+	if (this.event) 
+		this.event.preventDefault();
+
+	alert("Try dropping a file onto the carrier.");
 }
 
 // Initialization function for the page.
@@ -384,10 +343,24 @@ function init() {
     // Set up the vocoder chains
     setupVocoderGraph();
 
+
+    // hook up the UI sliders
 	var slider = document.createElement("div");
 	slider.className="slider";
-	document.getElementById("signalgroup").appendChild(slider);
-	$( slider ).slider( { slide: onUpdateSignalLevel, value: 1.0, min: 0.0, max: 2.0, step: 0.01 } );
+	document.getElementById("modgaingroup").appendChild(slider);
+	$( slider ).slider( { slide: onUpdateModGain, value: 1.0, min: 0.0, max: 4.0, step: 0.1 } );
+	slider.units = "";
+
+	slider = document.createElement("div");
+	slider.className="slider";
+	document.getElementById("samplegroup").appendChild(slider);
+	$( slider ).slider( { slide: onUpdateSampleLevel, value: 0.0, min: 0.0, max: 2.0, step: 0.01 } );
+	slider.units = "";
+
+	slider = document.createElement("div");
+	slider.className="slider";
+	document.getElementById("synthgroup").appendChild(slider);
+	$( slider ).slider( { slide: onUpdateSynthLevel, value: 1.0, min: 0.0, max: 2.0, step: 0.01 } );
 	slider.units = "";
 
 	slider = document.createElement("div");
@@ -400,7 +373,7 @@ function init() {
 	slider.className="slider";
 	document.getElementById("detunegroup").appendChild(slider);
 	$( slider ).slider( { slide: onUpdateDetuneLevel, value: 0, min: -1200, max: 1200, step: 1 } );
-	slider.units = "cents";
+	slider.units = " cents";
 }
 
 function keyevent( event ) {

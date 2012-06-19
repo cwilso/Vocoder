@@ -48,9 +48,12 @@
 				<div id="modulator" class="module modulator has-footer">
 					<div class="content">
 						<h6>Modulator</h6>	
-<!--
-						<a href="#" class="preview-link"><img src="img/ico-preview.gif" alt="Preview icon" /> Preview</a>
--->
+						<div class="control-group last" id="modgaingroup">
+							<div class="slider-info">
+								<span class="label">gain</span>
+								<span class="value">1.0</span>
+							</div>
+						</div>
 					</div>
 					<footer>
 						<a href="#" id="modulatorfilename" class="active filename left">(not loaded)</a>
@@ -61,9 +64,15 @@
 				<div id="carrier" class="module carrier has-footer">
 					<div class="content">
 						<h6>Carrier</h6>	
-						<div class="control-group" id="signalgroup">
+						<div class="control-group" id="samplegroup">
 							<div class="slider-info">
-								<span class="label">Signal Level</span>
+								<span class="label">Sample Level</span>
+								<span class="value">0.0</span>
+							</div>
+						</div>
+						<div class="control-group" id="synthgroup">
+							<div class="slider-info">
+								<span class="label">Synth Level</span>
 								<span class="value">1.0</span>
 							</div>
 						</div>
@@ -76,7 +85,7 @@
 						<div class="control-group last" id="detunegroup">
 							<div class="slider-info">
 								<span class="label">Detune</span>
-								<span class="value">0</span>
+								<span class="value">0 cents</span>
 							</div>
 						</div>
 <!--
@@ -85,27 +94,27 @@
 					</div>
 					<footer>
 						<a href="#" id="carrierfilename" onclick="selectFile()" class="filename left top">(not loaded)</a>
-						<a href="#" onclick="selectFilename()" class="load-file top">Load File...</a>
-						<a href="#" onclick="selectSawtooth()" class="sawtooth left">Sawtooth</a>
-						<a href="#" onclick="selectWavetable()" class="wavetable active">Wavetable</a>
+						<a href="#" onclick="loadCarrierFile()" class="load-file top">Load File...</a>
+						<a href="#" id="sawtooth" onclick="selectSawtooth()" class="sawtooth left">Sawtooth</a>
+						<a href="#" id="wavetable" onclick="selectWavetable()" class="wavetable active">Wavetable</a>
 					</footer>
-					<a href="#" class="preview play" onclick="previewCarrier()"><img src="img/ico-preview.gif" alt="Preview icon" /></a>
+					<a href="#" class="preview play" onclick="previewCarrier()"><img class="stopped" id="carrierpreview" src="img/ico-play.png" alt="Preview icon" /></a>
 				</div>
 			</div> <!-- /#modules -->
 			<div id="connection">
-				<a href="#" id="play" onclick="vocodeUsingWaveTable()">Play</a>
+				<a href="#" id="play" onclick="vocode()">Play</a>
 			</div> <!-- /#connection -->
 			<div id="results" class="container">
 				<h2 class="before">input</h2>
 				<div id="result-top">
-					<canvas id="view1" style="height: 150px"></canvas>
+					<canvas id="view1" width="582" height="150"></canvas>
 				</div>
 				<div id="result-middle">
-					<canvas id="vcanvas" style="height: 100px"></canvas>
+					<canvas id="vcanvas" width="582" height="100"></canvas>
 				</div>
 				<h2 class="after">output</h2>
 				<div id="result-bottom">
-					<canvas id="view2" style="height: 150px"></canvas>
+					<canvas id="view2" width="582" height="150"></canvas>
 				</div>
 			</div> <!-- /#results -->
 		</section>

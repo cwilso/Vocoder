@@ -29,7 +29,8 @@
  */
 
 var CANVAS_WIDTH = 582;
-var CANVAS_HEIGHT = 190;
+var CANVAS_HEIGHT = 150;
+var GAINS_CANVAS_HEIGHT = 100;
 
 var FILTER_QUALITY = 6;  // The Q value for the carrier and modulator filters
 
@@ -42,16 +43,31 @@ var outputAnalyser = null;
 var modulatorInput = null;
 var carrierInput = null;
 
+var modulatorGain = null;
+var modulatorGainValue = 1.0;
+
 // noise node added to the carrier signal
 var noiseBuffer = null;
 var noiseNode = null;
 var noiseGain = null;
+var noiseGainValue = 0.2;
 
-// Wavetable oscillator stuff
+// Carrier sample gain
+var carrierSampleNode = null;
+var carrierSampleGain = null;
+var carrierSampleGainValue = 0.0;
+
+// Carrier Synth oscillator stuff
 var oscillatorNode = null;
-var carrierSignalGain = null;
+var oscillatorType = 4;		// CUSTOM
+var oscillatorGain = null;
+var oscillatorGainValue = 1.0;
+var oscillatorDetuneValue = 0;
 var FOURIER_SIZE = 4096;
 var wavetable = null;
+var wavetableSignalGain = null;
+var WAVETABLEBOOST = 40.0;
+var SAWTOOTHBOOST = 0.40;
 
 // These are the arrays of nodes - the "columns" across the frequency band "rows"
 var modFilterBands = null;		// tuned bandpass filters
@@ -329,6 +345,14 @@ function initBandpassFilters() {
 
 }
 
+function setupVocoderGraph() {
+	outputAnalyser = audioContext.createAnalyser();
+	outputAnalyser.fftSize = 2048;
+	outputAnalyser.smoothingTimeConstant = 0.0;
+	initBandpassFilters();
+}
+
+
 /* used for the old debug visualizer I don't currently use 
 
 function updateAnalyser( analyserNode, drawContext ) {
@@ -375,10 +399,10 @@ function updateAnalyser( analyserNode, drawContext ) {
 */
 
 function drawVocoderGains() {
-	vocoderCanvas.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+	vocoderCanvas.clearRect(0, 0, CANVAS_WIDTH, GAINS_CANVAS_HEIGHT);
   	vocoderCanvas.fillStyle = '#F6D565';
   	vocoderCanvas.lineCap = 'round';
-	var binWidth = (CANVAS_WIDTH / numVocoderBands)/2;
+	var binWidth = (CANVAS_WIDTH / numVocoderBands);
 	var value;
 
 	var sample = new Uint8Array(1); // should only need one sample
@@ -387,8 +411,8 @@ function drawVocoderGains() {
 	for (var i = 0; i < numVocoderBands; i++) {
     	vocoderCanvas.fillStyle = "hsl( " + Math.round((i*360)/numVocoderBands) + ", 100%, 50%)";
     	bandAnalysers[i].getByteTimeDomainData(sample);
-    	value = ((1.0 * sample[0]) - 128.0) / 128;
-    	vocoderCanvas.fillRect(i * binWidth, CANVAS_HEIGHT, binWidth, -value * 2 * CANVAS_HEIGHT );
+    	value = ((1.0 * sample[0]) - 128.0) / 64;
+    	vocoderCanvas.fillRect(i * binWidth, GAINS_CANVAS_HEIGHT, binWidth, -value * GAINS_CANVAS_HEIGHT );
 	}
 }
 
@@ -411,6 +435,90 @@ function updateAnalysers(time) {
 	drawVocoderGains();
 	
   	rafID = window.webkitRequestAnimationFrame( updateAnalysers );
+}
+
+function createCarriersAndPlay( output ) {
+	carrierSampleNode = audioContext.createBufferSource();
+	carrierSampleNode.buffer = carrierBuffer;
+	carrierSampleNode.loop = true;
+
+	carrierSampleGain = audioContext.createGainNode();
+	carrierSampleGain.gain.value = carrierSampleGainValue;
+	carrierSampleNode.connect( carrierSampleGain );
+	carrierSampleGain.connect( output );
+
+	// The wavetable signal needs a boost.
+	wavetableSignalGain = audioContext.createGainNode();
+
+	oscillatorNode = audioContext.createOscillator();
+	if (oscillatorType = 4)	{ // wavetable
+		oscillatorNode.setWaveTable(wavetable);
+		wavetableSignalGain.gain.value = WAVETABLEBOOST;
+	} else {
+		oscillatorNode.type = oscillatorType;
+		wavetableSignalGain.gain.value = SAWTOOTHBOOST;
+	}
+	oscillatorNode.frequency.value = 110;
+	oscillatorNode.detune.value = oscillatorDetuneValue;
+	oscillatorNode.connect(wavetableSignalGain);
+
+	oscillatorGain = audioContext.createGainNode();
+	oscillatorGain.gain.value = oscillatorGainValue;
+
+	wavetableSignalGain.connect(oscillatorGain);
+	oscillatorGain.connect(output);
+	
+	noiseNode = audioContext.createBufferSource();
+	noiseNode.buffer = noiseBuffer;
+	noiseNode.loop = true;
+	noiseGain = audioContext.createGainNode();
+	noiseGain.gain.value = noiseGainValue;
+	noiseNode.connect(noiseGain);
+
+	noiseGain.connect(output);
+	oscillatorNode.noteOn(0);
+	noiseNode.noteOn(0);
+	carrierSampleNode.noteOn(0);
+
+}
+
+function vocode() {
+	if (this.event) 
+		this.event.preventDefault();
+
+	if (vocoding) {
+		if (oscillatorNode && oscillatorNode.noteOff)
+			oscillatorNode.noteOff(0);
+		if (noiseNode)
+			noiseNode.noteOff(0);
+		if (modulatorNode)
+			modulatorNode.noteOff(0);
+		if (carrierSampleNode)
+			carrierSampleNode.noteOff(0);
+		if (carrierSampleGain)
+			carrierSampleGain.disconnect();
+		vocoding = false;
+		window.webkitCancelAnimationFrame( rafID );
+		return;
+	} else if (document.getElementById("carrierpreview").classList.contains("playing") )
+		finishPreviewingCarrier();
+	else if (document.getElementById("modulatorpreview").classList.contains("playing") )
+		finishPreviewingModulator();
+
+	createCarriersAndPlay( carrierInput );
+
+	vocoding = true;
+
+	modulatorNode = audioContext.createBufferSource();
+	modulatorNode.buffer = modulatorBuffer;
+	modulatorGain = audioContext.createGainNode();
+	modulatorGain.gain.value = modulatorGainValue;
+	modulatorNode.connect( modulatorGain );
+	modulatorGain.connect( modulatorInput );
+	modulatorNode.noteOn(0);
+
+ 	window.webkitRequestAnimationFrame( updateAnalysers );
+	window.setTimeout( cancelVocoderUpdates, modulatorNode.buffer.duration * 1000 + 20 );
 }
 
 
