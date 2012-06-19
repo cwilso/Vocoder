@@ -420,10 +420,7 @@ var rafID = null;
 
 function cancelVocoderUpdates() {
 	window.webkitCancelAnimationFrame( rafID );
-
-	//turn off the carrier loop when the modulator is done playing
-	if (carrierNode)
-		carrierNode.noteOff(0); 
+	rafID = null;
 }
 
 function updateAnalysers(time) {
@@ -487,18 +484,14 @@ function vocode() {
 		this.event.preventDefault();
 
 	if (vocoding) {
-		if (oscillatorNode && oscillatorNode.noteOff)
-			oscillatorNode.noteOff(0);
-		if (noiseNode)
-			noiseNode.noteOff(0);
 		if (modulatorNode)
 			modulatorNode.noteOff(0);
-		if (carrierSampleNode)
-			carrierSampleNode.noteOff(0);
-		if (carrierSampleGain)
-			carrierSampleGain.disconnect();
+		shutOffCarrier();
 		vocoding = false;
-		window.webkitCancelAnimationFrame( rafID );
+		cancelVocoderUpdates();
+		if (endOfModulatorTimer)
+			window.clearTimeout(endOfModulatorTimer);
+		endOfModulatorTimer = 0;
 		return;
 	} else if (document.getElementById("carrierpreview").classList.contains("playing") )
 		finishPreviewingCarrier();
@@ -518,7 +511,7 @@ function vocode() {
 	modulatorNode.noteOn(0);
 
  	window.webkitRequestAnimationFrame( updateAnalysers );
-	window.setTimeout( cancelVocoderUpdates, modulatorNode.buffer.duration * 1000 + 20 );
+	endOfModulatorTimer = window.setTimeout( vocode, modulatorNode.buffer.duration * 1000 + 20 );
 }
 
 
