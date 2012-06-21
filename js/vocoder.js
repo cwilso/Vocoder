@@ -514,6 +514,57 @@ function vocode() {
 	endOfModulatorTimer = window.setTimeout( vocode, modulatorNode.buffer.duration * 1000 + 20 );
 }
 
+window.addEventListener('keydown', function(ev) {
+		var centOffset;
+       switch (ev.keyCode) {
+       	case 'A'.charCodeAt(0):
+       		centOffset = -700;		break;
+        case 'W'.charCodeAt(0):
+        	centOffset = -600;		break;
+       	case 'S'.charCodeAt(0):
+       		centOffset = -500;		break;
+        case 'E'.charCodeAt(0):
+        	centOffset = -400;		break;
+        case 'D'.charCodeAt(0):
+        	centOffset = -300;		break;
+        case 'R'.charCodeAt(0):
+        	centOffset = -200;		break;
+        case 'F'.charCodeAt(0):
+        	centOffset = -100;		break;
+        case 'G'.charCodeAt(0):
+        	centOffset = 0;			break;
+        case 'Y'.charCodeAt(0):
+        	centOffset = 100;		break;
+        case 'H'.charCodeAt(0):
+        	centOffset = 200;		break;
+        case 'U'.charCodeAt(0):
+        	centOffset = 300;		break;
+        case 'J'.charCodeAt(0):
+        	centOffset = 400;		break;
+        case 'K'.charCodeAt(0):
+        	centOffset = 500;		break;
+        case 'O'.charCodeAt(0):
+        	centOffset = 600;		break;
+        case 'L'.charCodeAt(0):
+        	centOffset = 700;		break;
+        case 'P'.charCodeAt(0):
+        	centOffset = 800;		break;
+        case 186: 	// ;
+        	centOffset = 900;		break;
+        case 219: 	// [
+        	centOffset = 1000;		break;
+        case 222: 	// '
+        	centOffset = 1100;		break;
+        default:
+        	return;
+      }
+      var detunegroup = document.getElementById("detunegroup");
+      $( detunegroup.children[1] ).slider( "value", centOffset );
+      updateSlider( detunegroup, centOffset, " cents" );
+      if (oscillatorNode)
+        oscillatorNode.detune.value = centOffset;
+
+    }, false);
 
 //  Notes for band-pass filter approach:
 // The general approach is to feed the modulator signal through a bank of tuned band-pass filters.
@@ -528,5 +579,3 @@ function vocode() {
 // [1] From http://en.wikipedia.org/wiki/Heterodyne - multiplying signals in this way creates two
 // new signals, one at the sum f1 + f2 of the frequencies, and the other at the difference f1 - f2.
 // Masking off the upper will result in obtaining the power signal.
-//
-// Oscillator's current peak-to-peak normalization is 0.5 to -0.5; it will change to 1 to -1.

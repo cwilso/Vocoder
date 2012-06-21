@@ -73,28 +73,30 @@ function midiProc(t,a,b,c) {
       modulatorGainValue = value;
       if (modulatorGain)
         modulatorGain.gain.value = value;
-    } else if (b == 5) {  //  CC2: Carrier sample level
+    } else if (b == 2) {  // CC2: "Gender" - tuning frequencies
+      scaleCarrierFilterFrequencies((Math.floor( (100 * c) / 63.5) / 100) + 0.5) // ideally would be 0.5 - 2.0, centered on 1.
+    } else if (b == 5) {  //  CC5: Carrier sample level
       var sampleValue = Math.floor( (100 * c) / 63.5) / 100; // 0.0-2.0
       var samplegroup = document.getElementById("samplegroup");
       $( samplegroup.children[1] ).slider( "value", sampleValue );
       updateSlider( samplegroup, sampleValue, "" );
       if (carrierSampleGain)
         carrierSampleGain.gain.value = sampleValue;
-    } else if (b == 6) {  //  CC2: Carrier synth level
+    } else if (b == 6) {  //  CC6: Carrier synth level
       var synthValue = Math.floor( (100 * c) / 63.5) / 100; // 0.0-2.0
       var synthgroup = document.getElementById("synthgroup");
       $( synthgroup.children[1] ).slider( "value", synthValue );
       updateSlider( synthgroup, synthValue, "" );
       if (oscillatorGain)
         oscillatorGain.gain.value = synthValue;
-    } else if (b == 7) {  //  CC3: Carrier noise level
+    } else if (b == 7) {  //  CC7: Carrier noise level
       var noiseValue = Math.floor( (100 * c) / 63.5) / 100; // 0.0-2.0
       var noisegroup = document.getElementById("noisegroup");
       $( noisegroup.children[1] ).slider( "value", noiseValue );
       updateSlider( noisegroup, noiseValue, "" );
       if (noiseGain)
         noiseGain.gain.value = noiseValue;
-    } else if (b == 8) {
+    } else if (b == 8) {  // CC8: HP filter gain
       hpFilterGain.gain.value = c / 63.5; // 0.0-1.0
     }
   }

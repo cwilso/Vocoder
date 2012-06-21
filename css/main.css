@@ -84,7 +84,7 @@ body {
 	display: inline;
 	float: left;
 	margin: 0 0 0 18px;
-	padding: 35px 0 0;
+	padding: 15px 0 0;
 	width: 200px;
 }
 
@@ -157,7 +157,7 @@ body {
 
 /* Control group */
 .control-group {
-	margin: 0 0 1.2em;
+	margin: 0 0 1em;
 }
 .control-group.last {
 	margin: 0;

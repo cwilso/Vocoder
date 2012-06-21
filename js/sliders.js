@@ -98,6 +98,16 @@ function updateFrequencies( event ) {
 	t.parentNode.childNodes[2].textContent = value;
 }
 
+function scaleCarrierFilterFrequencies( scalingFactor ) {
+	for (var i=0; i<numVocoderBands; i++) {
+		var filter = carrierBands[i];
+		var newFrequency = vocoderBands[i].frequency * scalingFactor;
+		filter.frequency.value = newFrequency;
+		if (filter.chainedFilter)
+			filter.chainedFilter.frequency.value = newFrequency;
+	}
+}
+
 function clearSliders() {
 	var sliders = document.getElementById("sliders");
 	var child;
