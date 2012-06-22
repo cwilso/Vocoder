@@ -473,7 +473,9 @@ function createCarriersAndPlay( output ) {
 	noiseNode.connect(noiseGain);
 
 	noiseGain.connect(output);
-	oscillatorNode.noteOn(0);
+	//TODO: the "if" clause here can be removed in future; some older Chrome builds don't have noteOn on Oscillator
+	if (oscillatorNode.noteOn)
+		oscillatorNode.noteOn(0);
 	noiseNode.noteOn(0);
 	carrierSampleNode.noteOn(0);
 

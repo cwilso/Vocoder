@@ -80,7 +80,9 @@ function previewCarrier() {
 }
 
 function shutOffCarrier() {
-	oscillatorNode.noteOff(0);
+	//TODO: the "if" clause here can be removed in future; some older Chrome builds don't have noteOn on Oscillator
+	if (oscillatorNode.noteOff)
+		oscillatorNode.noteOff(0);
 	oscillatorNode = null;
 	noiseNode.noteOff(0);
 	noiseNode = null;
