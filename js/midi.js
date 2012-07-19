@@ -155,7 +155,7 @@ window.addEventListener('load', function() {
   }
 
   var fallback = document.createElement("a");
-  fallback.style.visibility="visible";
+  fallback.style.visibility="hidden";
   fallback.style.background="white";
   fallback.style.font="20px Arial,sans-serif";
   fallback.style.padding="20px";
@@ -164,7 +164,7 @@ window.addEventListener('load', function() {
   fallback.style.zIndex="100";
   fallback.style.border="2px solid red";
   fallback.style.borderRadius="5px";
-  fallback.appendChild(document.createTextNode("This page requires the Jazz MIDI Plugin."));
+  fallback.appendChild(document.createTextNode("This application can use the Jazz MIDI Plugin if installed."));
   fallback.href = "http://jazz-soft.net/";
   Jazz.appendChild(fallback);
 
