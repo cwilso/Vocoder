@@ -8,6 +8,19 @@
  *	- Links
  *	-------------------------------------------------------------------------*/
 
+div.link {
+	font-style: italic;
+	color: lightgrey;
+	margin-left: 780px;
+	margin-top: 5px;
+}
+
+div.link a {
+	color: white;
+	font: inherit;
+	text-decoration: underline;
+}
+
 /* Fonts */
 @font-face {
     font-family: 'ProximaNovaRgRegular';
