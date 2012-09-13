@@ -1,5 +1,5 @@
 <!doctype html>
-<html class="no-js" lang="en">
+<html class="no-js" lang="en" manifest="vocoder.appcache">
 <head>
 	<meta charset="utf-8" />
 	<title>Vocoder</title>
@@ -35,13 +35,30 @@
 
 	<script>
 	if (window != window.top)
-		document.write("<style>#header {display:none}</style>")
+		document.write("<style>.header {display:none}</style>")
+	// Check if a new cache is available on page load.
+	window.addEventListener('load', function(e) {
+
+	  window.applicationCache.addEventListener('updateready', function(e) {
+	    if (window.applicationCache.status == window.applicationCache.UPDATEREADY) {
+	      // Browser downloaded a new app cache.
+	      // Swap it in and reload the page to get the new hotness.
+	      window.applicationCache.swapCache();
+	      if (confirm('A new version of this site is available. Load it?')) {
+	        window.location.reload();
+	      }
+	    } else {
+	      // Manifest didn't changed. Nothing new to server.
+	    }
+	  }, false);
+
+	}, false);
 	</script>
 
 </head>
 <body>
 	<div id="main" class="container">
-		<header id="header">
+		<header class="header">
 			<img src="img/logo.png" alt="Web Audio Vocoder" />	
 		</header>
 		<section id="content">
@@ -140,5 +157,7 @@
 		</div>
 
 		<div id="sliders"></div>
+	</div>
+	<a href="https://github.com/cwilso/vocoder" class="header" style="position: absolute; z-index:2; top: 0; right: 0; border: 0;"><img src="img/forkme.png" alt="Fork me on GitHub"></a>
 </body>
 </html>
