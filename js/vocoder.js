@@ -516,6 +516,52 @@ function vocode() {
 	endOfModulatorTimer = window.setTimeout( vocode, modulatorNode.buffer.duration * 1000 + 20 );
 }
 
+function error() {
+    alert('Stream generation failed.');
+}
+
+function getUserMedia(dictionary, callback) {
+    try {
+        navigator.webkitGetUserMedia(dictionary, callback, error);
+    } catch (e) {
+        alert('webkitGetUserMedia threw exception :' + e);
+    }
+}
+
+function gotStream(stream) {
+    // Create an AudioNode from the stream.
+    var mediaStreamSource = audioContext.createMediaStreamSource(stream);    
+
+	modulatorGain = audioContext.createGainNode();
+	modulatorGain.gain.value = modulatorGainValue;
+	modulatorGain.connect( modulatorInput );
+    mediaStreamSource.connect( modulatorGain );
+
+	createCarriersAndPlay( carrierInput );
+
+	vocoding = true;
+
+ 	window.webkitRequestAnimationFrame( updateAnalysers );
+}
+
+function useLiveInput() {
+	if (vocoding) {
+		if (modulatorNode)
+			modulatorNode.noteOff(0);
+		shutOffCarrier();
+		vocoding = false;
+		cancelVocoderUpdates();
+		if (endOfModulatorTimer)
+			window.clearTimeout(endOfModulatorTimer);
+		endOfModulatorTimer = 0;
+	} else if (document.getElementById("carrierpreview").classList.contains("playing") )
+		finishPreviewingCarrier();
+	else if (document.getElementById("modulatorpreview").classList.contains("playing") )
+		finishPreviewingModulator();
+
+    getUserMedia({audio:true}, gotStream);	
+}
+
 window.addEventListener('keydown', function(ev) {
 		var centOffset;
        switch (ev.keyCode) {
