@@ -54,6 +54,6 @@ void main()
     gl_Position = worldViewProjection * newPosition;
     texCoord = gTexCoord0;
 
-    float hue = ((gPosition.x + 6.0) / 12.0) * 360.0;
-    color = convertHSVToRGB(hue, 0.7, 1.0);
+    float hue = 360.0 - ((newPosition.y / verticalScale) * 360.0);
+    color = convertHSVToRGB(hue, 1.0, 1.0);
 }
