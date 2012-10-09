@@ -528,6 +528,16 @@ function getUserMedia(dictionary, callback) {
     }
 }
 
+function convertToMono( input ) {
+    var splitter = audioContext.createChannelSplitter(2);
+    var merger = audioContext.createChannelMerger(2);
+
+    input.connect( splitter );
+    splitter.connect( merger, 0, 0 );
+    splitter.connect( merger, 0, 1 );
+    return merger;
+}
+
 function gotStream(stream) {
     // Create an AudioNode from the stream.
     var mediaStreamSource = audioContext.createMediaStreamSource(stream);    
@@ -535,7 +545,10 @@ function gotStream(stream) {
 	modulatorGain = audioContext.createGainNode();
 	modulatorGain.gain.value = modulatorGainValue;
 	modulatorGain.connect( modulatorInput );
-    mediaStreamSource.connect( modulatorGain );
+
+	// make sure the source is mono - some sources will be left-side only
+    var monoSource = convertToMono( mediaStreamSource );
+    monoSource.connect( modulatorGain );
 
 	createCarriersAndPlay( carrierInput );
 
