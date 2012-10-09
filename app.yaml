@@ -9,6 +9,10 @@ handlers:
   static_files: index.html
   upload: index.html
 
+- url: /vocoder.appcache
+  static_files: vocoder.appcache
+  upload: vocoder.appcache
+
 - url: /audio
   static_dir: audio
 

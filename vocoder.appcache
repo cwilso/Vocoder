@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# 2012-09-14
+# 2012-10-09
 
 CACHE:
 audio/gettysburg.ogg
@@ -15,7 +15,9 @@ img/ico-play.png
 img/ico-stop.png
 img/logo.png
 img/play.png
-index.html
+img/slider-bkg.gif
+img/slider-handle.png
+# index.html
 js/jquery-1.7.2.min.js
 js/jquery-ui-1.8.21.custom.min.js
 js/main.js
