@@ -70,40 +70,48 @@ o3djs.shader.loadFromScriptNodes = function(gl,
 
 
 /**
- * Loads text from an external file. This function is synchronous.
+ * Sends request for text from an external file. This function is asynchronous.
  * @param {string} url The url of the external file.
- * @return {string} the loaded text if the request is synchronous.
+ * @param {function} callback function with the loaded text.
  */
-o3djs.shader.loadTextFileSynchronous = function(url) {
-  var error = 'loadTextFileSynchronous failed to load url "' + url + '"';
-  var request;
-
-  request = new XMLHttpRequest();
+o3djs.shader.sendTextFileRequest = function(url, callback) {
+  var request = new XMLHttpRequest();
   if (request.overrideMimeType) {
     request.overrideMimeType('text/plain');
   }
-
-  request.open('GET', url, false);
-  request.send(null);
-  if (request.readyState != 4) {
-    throw error;
-  }
-  return request.responseText;
+  request.open('GET', url, true);
+  request.onload = callback;
+  request.send();
 };
 
+function shaderVertexLoaderCallback( vertexText ) {
+  this.vertexText = vertexText.currentTarget.response;
+  if ( this.fragmentText ) {
+    this.shader = new o3djs.shader.Shader(this.gl, this.vertexText, this.fragmentText);
+    if (this.callback)
+      this.callback(this.shader);
+  }
+}
 
-o3djs.shader.loadFromURL = function(gl,
+function shaderFragmentLoaderCallback( fragmentText ) {
+  this.fragmentText = fragmentText.currentTarget.response;
+  if ( this.vertexText ) {
+    this.shader = new o3djs.shader.Shader(this.gl, this.vertexText, this.fragmentText);
+    if (this.callback)
+      this.callback(this.shader);
+  }
+}
+
+o3djs.shader.asyncLoadFromURL = function(gl,
                                     vertexURL,
-                                    fragmentURL) {
+                                    fragmentURL, callback ) {
+  var shaderLoader = {};
+  shaderLoader.gl = gl;
+  shaderLoader.callback = callback;
 
-  var vertexText = o3djs.shader.loadTextFileSynchronous(vertexURL);
-  var fragmentText = o3djs.shader.loadTextFileSynchronous(fragmentURL);
+  var vertexText = o3djs.shader.sendTextFileRequest(vertexURL,shaderVertexLoaderCallback.bind(shaderLoader));
+  var fragmentText = o3djs.shader.sendTextFileRequest(fragmentURL,shaderFragmentLoaderCallback.bind(shaderLoader));
 
-  if (!vertexText || !fragmentText)
-    return null;
-  return new o3djs.shader.Shader(gl,
-                                 vertexText,
-                                 fragmentText);
 }
 
 

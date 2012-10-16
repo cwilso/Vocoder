@@ -32,29 +32,6 @@
 	<script src="js/vocoder.js"></script>
 	<script src="js/waveshaper.js"></script>
 	<script src="js/sliders.js"></script>
-
-	<script>
-	if (window != window.top)
-		document.write("<style>.header {display:none}</style>")
-	// Check if a new cache is available on page load.
-	window.addEventListener('load', function(e) {
-
-	  window.applicationCache.addEventListener('updateready', function(e) {
-	    if (window.applicationCache.status == window.applicationCache.UPDATEREADY) {
-	      // Browser downloaded a new app cache.
-	      // Swap it in and reload the page to get the new hotness.
-	      window.applicationCache.swapCache();
-	      if (confirm('A new version of this site is available. Load it?')) {
-	        window.location.reload();
-	      }
-	    } else {
-	      // Manifest didn't changed. Nothing new to server.
-	    }
-	  }, false);
-
-	}, false);
-	</script>
-
 </head>
 <body>
 	<div id="main" class="container">
@@ -75,9 +52,9 @@
 					</div>
 					<footer>
 						<a href="#" id="modulatorfilename" class="active filename left">(not loaded)</a>
-						<a href="#" class="load-file" onclick="useLiveInput()">live input</a>
+						<a href="#" id="liveInput" class="load-file">live input</a>
 					</footer>
-					<a href="#" class="preview" onclick="previewModulator()"><img class="stopped" id="modulatorpreview" src="img/ico-play.png" alt="Preview icon" /></a>
+					<a href="#" id="modpreview" class="preview"><img class="stopped" id="modulatorpreview" src="img/ico-play.png" alt="Preview icon" /></a>
 				</div>
 				<div id="carrier" class="module carrier has-footer">
 					<div class="content">
@@ -111,16 +88,16 @@
 -->
 					</div>
 					<footer>
-						<a href="#" id="carrierfilename" onclick="selectFile()" class="filename left top">(not loaded)</a>
-						<a href="#" onclick="loadCarrierFile()" class="load-file top">Load File...</a>
-						<a href="#" id="sawtooth" onclick="selectSawtooth()" class="sawtooth left">Sawtooth</a>
-						<a href="#" id="wavetable" onclick="selectWavetable()" class="wavetable active">Wavetable</a>
+						<a href="#" id="carrierfilename" class="filename left top">(not loaded)</a>
+						<a href="#" id="loadcarrier" class="load-file top">Load File...</a>
+						<a href="#" id="sawtooth" class="sawtooth left">Sawtooth</a>
+						<a href="#" id="wavetable" class="wavetable active">Wavetable</a>
 					</footer>
-					<a href="#" class="preview play" onclick="previewCarrier()"><img class="stopped" id="carrierpreview" src="img/ico-play.png" alt="Preview icon" /></a>
+					<a href="#" id="previewcarrier" class="preview play"><img class="stopped" id="carrierpreview" src="img/ico-play.png" alt="Preview icon" /></a>
 				</div>
 			</div> <!-- /#modules -->
 			<div id="connection">
-				<a href="#" id="play" onclick="vocode()">Play</a>
+				<a href="#" id="play">Play</a>
 			</div> <!-- /#connection -->
 			<div id="results" class="container">
 				<h2 class="before">input</h2>
@@ -137,7 +114,7 @@
 			</div> <!-- /#results -->
 		</section>
 	</div> <!-- /#main -->
-	<div class="link">Code available on <a href="https://github.com/cwilso/Vocoder">GitHub</a>.</div>
+<!--	<div class="link">Code available on <a href="https://github.com/cwilso/Vocoder">GitHub</a>.</div>  -->
 	<div style="display:none" ID="controls">
 		<!-- Analyser type -->
 		<input type="radio" name="radioSet" value="data" 
@@ -158,20 +135,6 @@
 
 		<div id="sliders"></div>
 	</div>
-	<a href="https://github.com/cwilso/vocoder" class="header" style="position: absolute; z-index:2; top: 0; right: 0; border: 0;"><img src="img/forkme.png" alt="Fork me on GitHub"></a>
-
-<script type="text/javascript">
-
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-35593052-1']);
-  _gaq.push(['_trackPageview']);
-
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
-
-</script>
+	<a href="https://github.com/cwilso/vocoder" target="_new" class="header" style="position: absolute; z-index:2; top: 0; right: 0; border: 0;"><img src="img/forkme.png" alt="Fork me on GitHub"></a>
 </body>
 </html>
