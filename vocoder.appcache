@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# 2012-10-15a
+# 2012-11-20
 
 CACHE:
 audio/gettysburg.ogg
@@ -32,7 +32,6 @@ js/visualizer/shader.js
 js/visualizer/visualizer.js
 js/vocoder.js
 js/waveshaper.js
-lib/midiapplet-0.6.3.jar
 lib/WebMIDIAPI.js
 shaders/common-vertex.shader
 shaders/frequency-fragment.shader
