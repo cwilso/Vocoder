@@ -106,7 +106,7 @@ function gotMIDI( midiAccess ) {
   midi = midiAccess;
   var ins = midiAccess.enumerateInputs();
   if (ins.length) {
-    midiIn = midiAccess.getInput( ins[0] );
+    midiIn = midiAccess.getInput( ins[ins.length-1] );
     midiIn.onmessage = midiMessageReceived;
   }
 }
