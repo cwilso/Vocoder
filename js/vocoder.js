@@ -353,50 +353,6 @@ function setupVocoderGraph() {
 }
 
 
-/* used for the old debug visualizer I don't currently use 
-
-function updateAnalyser( analyserNode, drawContext ) {
-	var SPACER_WIDTH = 2;
-	var BAR_WIDTH = 2;
-	var OFFSET = 100;
-	var CUTOFF = 23;
-	var numBars = Math.round(CANVAS_WIDTH / SPACER_WIDTH);
-	var freqByteData = new Uint8Array(analyserNode.frequencyBinCount);
-
-	analyserNode.getByteFrequencyData(freqByteData); 
-
-	drawContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  	drawContext.fillStyle = '#F6D565';
-  	drawContext.lineCap = 'round';
-	var multiplier = analyserNode.frequencyBinCount / numBars;
-
-	// Draw rectangle for each frequency bin.
-	for (var i = 0; i < numBars; ++i) {
-		var magnitude = 0;
-		var offset = Math.floor( i * multiplier );
-		// gotta sum/average the block, or we miss narrow-bandwidth spikes
-		for (var j = 0; j< multiplier; j++)
-			magnitude += freqByteData[offset + j];
-		magnitude = magnitude / multiplier;
-		var magnitude2 = freqByteData[i * multiplier];
-    	drawContext.fillStyle = "hsl( " + Math.round((i*360)/numBars) + ", 100%, 50%)";
-    	drawContext.fillRect(i * SPACER_WIDTH, CANVAS_HEIGHT, BAR_WIDTH, -magnitude);
-	}
-	//draw lines for vocoder frequency band centers
-   	drawContext.fillStyle = "#000000";
-   	var nyquist = audioContext.sampleRate / 2;
-	for (var i = 0; i < numVocoderBands; ++i) {
-		// line should be at: vocoderBands[i].frequency * CANVAS_WIDTH / nyquist
-		var x = vocoderBands[i].frequency * CANVAS_WIDTH / nyquist;
-     	drawContext.beginPath();  
-   		drawContext.moveTo( x, 0 );  
-		drawContext.lineTo( x, CANVAS_HEIGHT );  
-		drawContext.stroke();
- 	}
-//	console.log("\n" + analyserNode.frequencyBinCount);
-}
-
-*/
 
 function drawVocoderGains() {
 	vocoderCanvas.clearRect(0, 0, CANVAS_WIDTH, GAINS_CANVAS_HEIGHT);
@@ -536,6 +492,23 @@ function convertToMono( input ) {
     splitter.connect( merger, 0, 0 );
     splitter.connect( merger, 0, 1 );
     return merger;
+}
+
+function generateNoiseFloorCurve( floor ) {
+    // "floor" is 0...1
+
+    var curve = new Float32Array(65536);
+    var mappedFloor = floor * 32768;
+
+    for (var i=0; i<32768; i++) {
+        var value = (i<mappedFloor) ? 0 : 1;
+
+        curve[32768-i] = -value;
+        curve[32768+i] = value;
+    }
+    curve[0] = curve[1]; // fixing up the end.
+
+    return curve;
 }
 
 function createNoiseGate( connectTo ) {
