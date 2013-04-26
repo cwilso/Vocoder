@@ -538,6 +538,36 @@ function convertToMono( input ) {
     return merger;
 }
 
+function createNoiseGate( connectTo ) {
+    var inputNode = audioContext.createGain();
+    var rectifier = audioContext.createWaveShaper();
+    var ngFollower = audioContext.createBiquadFilter();
+    ngFollower.type = ngFollower.LOWPASS;
+    ngFollower.frequency.value = 10.0;
+
+    var curve = new Float32Array(65536);
+    for (var i=-32768; i<32768; i++)
+        curve[i+32768] = ((i>0)?i:-i)/32768;
+    rectifier.curve = curve;
+    rectifier.connect(ngFollower);
+
+    var ngGate = audioContext.createWaveShaper();
+    ngGate.curve = generateNoiseFloorCurve(parseFloat(document.getElementById("ngFloor").value));
+
+    ngFollower.connect(ngGate);
+
+    var gateGain = audioContext.createGain();
+    gateGain.gain.value = 0.0;
+    ngGate.connect( gateGain.gain );
+
+    gateGain.connect( connectTo );
+
+    inputNode.connect(rectifier);
+    inputNode.connect(gateGain);
+    return inputNode;
+}
+
+
 function gotStream(stream) {
     // Create an AudioNode from the stream.
     var mediaStreamSource = audioContext.createMediaStreamSource(stream);    
@@ -548,7 +578,9 @@ function gotStream(stream) {
 
 	// make sure the source is mono - some sources will be left-side only
     var monoSource = convertToMono( mediaStreamSource );
-    monoSource.connect( modulatorGain );
+
+    //create a noise gate
+    monoSource.connect( createNoiseGate( modulatorGain ) );
 
 	createCarriersAndPlay( carrierInput );
 
