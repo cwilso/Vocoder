@@ -552,7 +552,7 @@ function createNoiseGate( connectTo ) {
     rectifier.connect(ngFollower);
 
     var ngGate = audioContext.createWaveShaper();
-    ngGate.curve = generateNoiseFloorCurve(parseFloat(document.getElementById("ngFloor").value));
+    ngGate.curve = generateNoiseFloorCurve(0.01);
 
     ngFollower.connect(ngGate);
 
