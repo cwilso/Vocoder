@@ -96,7 +96,7 @@ function midiMessageReceived( e ) {
 
 //init: create plugin
 window.addEventListener('load', function() {   
-  navigator.requestMIDIAccess( gotMIDI, null );
+  navigator.requestMIDIAccess().then( gotMIDI, null );
 } );
 
 var midi = null;
@@ -104,9 +104,7 @@ var midiIn = null;
 
 function gotMIDI( midiAccess ) {
   midi = midiAccess;
-  var ins = midiAccess.enumerateInputs();
-  if (ins.length) {
-    midiIn = midiAccess.getInput( ins[ins.length-1] );
-    midiIn.onmessage = midiMessageReceived;
-  }
+  var ins = midiAccess.inputs();
+  for (var i=0; i<ins.length; i++)
+    ins[i].onmidimessage = midiMessageReceived;
 }
