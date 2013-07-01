@@ -68,7 +68,7 @@ function previewCarrier() {
 	carrierPreviewImg.classList.add("playing");
 	carrierPreviewImg.src = "img/ico-stop.png";
 
-	carrierAnalyserNode = audioContext.createGainNode();
+	carrierAnalyserNode = audioContext.createGain();
 	carrierAnalyserNode.gain.value = 0.25;	// carrier is LOUD.
 	carrierAnalyserNode.connect( audioContext.destination );
 	carrierAnalyserNode.connect( analyser2 );
@@ -80,13 +80,11 @@ function previewCarrier() {
 }
 
 function shutOffCarrier() {
-	//TODO: the "if" clause here can be removed in future; some older Chrome builds don't have noteOn on Oscillator
-	if (oscillatorNode.noteOff)
-		oscillatorNode.noteOff(0);
+	oscillatorNode.stop(0);
 	oscillatorNode = null;
-	noiseNode.noteOff(0);
+	noiseNode.stop(0);
 	noiseNode = null;
-	carrierSampleNode.noteOff(0);
+	carrierSampleNode.stop(0);
 	carrierSampleNode = null;
 }
 
@@ -128,7 +126,7 @@ function previewModulator() {
 	modulatorNode.connect( audioContext.destination );
 	modulatorNode.connect( analyser1 );
 
-	modulatorNode.noteOn(0);
+	modulatorNode.start(0);
 
   	window.webkitRequestAnimationFrame( updateAnalysers );
 	endOfModulatorTimer = window.setTimeout( finishPreviewingModulator, modulatorNode.buffer.duration * 1000 + 20 );
@@ -140,7 +138,7 @@ function finishPreviewingModulator() {
 		window.clearTimeout(endOfModulatorTimer);
 	endOfModulatorTimer = 0;
 	cancelVocoderUpdates();
-	modulatorNode.noteOff(0);
+	modulatorNode.stop(0);
 	modulatorNode = null;
 	modPreviewImg.classList.remove("playing");
 	modPreviewImg.src = "img/ico-play.png";
@@ -161,8 +159,8 @@ function loadCarrier( buffer ) {
 		newCarrierNode.loop = true;
 		newCarrierNode.connect( carrierInput );
 		carrierNode.disconnect();
-		newCarrierNode.noteOn(0);
-		carrierNode.noteOff(0);
+		newCarrierNode.start(0);
+		carrierNode.stop(0);
 		carrierNode = newCarrierNode;	
 	}
 }
@@ -376,10 +374,10 @@ function init() {
 	document.getElementById("play").addEventListener('click', vocode );
 
   	try {
-    	audioContext = new webkitAudioContext();
+    	audioContext = new AudioContext();
   	}
   	catch(e) {
-    	alert('Web Audio API is not supported in this browser');
+    	alert('The Web Audio API is apparently not supported in this browser.');
   	}
 
 	initDragDropOfAudioFiles();	// set up panels as drop sites for audio files

@@ -96,7 +96,7 @@ function midiMessageReceived( e ) {
 
 //init: create plugin
 window.addEventListener('load', function() {   
-  navigator.requestMIDIAccess().then( gotMIDI, null );
+  navigator.requestMIDIAccess().then( gotMIDI, didntGetMIDI );
 } );
 
 var midi = null;
@@ -107,4 +107,8 @@ function gotMIDI( midiAccess ) {
   var ins = midiAccess.inputs();
   for (var i=0; i<ins.length; i++)
     ins[i].onmidimessage = midiMessageReceived;
+}
+
+function didntGetMIDI( error ) {
+  console.log("No MIDI access: " + error.code );
 }

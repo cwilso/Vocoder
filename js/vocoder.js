@@ -126,8 +126,8 @@ function loadNoiseBuffer() {	// create a 5-second buffer of noise
 function initBandpassFilters() {
 	// When this function is called, the carrierNode and modulatorAnalyser 
 	// may not already be created.  Create placeholder nodes for them.
-	modulatorInput = audioContext.createGainNode();
-	carrierInput = audioContext.createGainNode();
+	modulatorInput = audioContext.createGain();
+	carrierInput = audioContext.createGain();
 
 	if (modFilterBands == null)
 		modFilterBands = new Array();
@@ -171,7 +171,7 @@ function initBandpassFilters() {
 	hpFilter.Q.value = 1; // 	no peaking
 	modulatorInput.connect( hpFilter);
 
-	hpFilterGain = audioContext.createGainNode();
+	hpFilterGain = audioContext.createGain();
 	hpFilterGain.gain.value = 0.0;
 
 	hpFilter.connect( hpFilterGain );
@@ -189,7 +189,7 @@ function initBandpassFilters() {
 	carrierBandGains.length = 0;
 	bandAnalysers.length = 0;
 
-	var outputGain = audioContext.createGainNode();
+	var outputGain = audioContext.createGain();
 	outputGain.connect(audioContext.destination);
 
 	for (var i=0; i<numVocoderBands; i++) {
@@ -213,7 +213,7 @@ function initBandpassFilters() {
 		modulatorFilter.connect( secondModulatorFilter );
 
 		// create a post-filtering gain to bump the levels up.
-		var modulatorFilterPostGain = audioContext.createGainNode();
+		var modulatorFilterPostGain = audioContext.createGain();
 		modulatorFilterPostGain.gain.value = 6.0;
 		secondModulatorFilter.connect( modulatorFilterPostGain );
 		modFilterPostGains.push( modulatorFilterPostGain );
@@ -222,23 +222,21 @@ function initBandpassFilters() {
 		var heterodyneOscillator = audioContext.createOscillator();
 		heterodyneOscillator.frequency.value = vocoderBands[i].frequency;
 
-		//TODO: the "if" clause here can be removed in future; some older Chrome builds don't have noteOn on Oscillator
-		if (heterodyneOscillator.noteOn)
-			heterodyneOscillator.noteOn(0);
+		heterodyneOscillator.start(0);
 
 		// Create the node to multiply the sine by the modulator
-		var heterodyne = audioContext.createGainNode();
+		var heterodyne = audioContext.createGain();
 		modulatorFilterPostGain.connect( heterodyne );
 		heterodyne.gain.value = 0.0;	// audio-rate inputs are summed with initial intrinsic value
 		heterodyneOscillator.connect( heterodyne.gain );
 
-		var heterodynePostGain = audioContext.createGainNode();
+		var heterodynePostGain = audioContext.createGain();
 		heterodynePostGain.gain.value = 2.0;		// GUESS:  boost
 		heterodyne.connect( heterodynePostGain );
 		heterodynes.push( heterodynePostGain );
 
 		// Create the power node
-		var power = audioContext.createGainNode();
+		var power = audioContext.createGain();
 		powers.push( power );
 		heterodynePostGain.connect( power );
 		power.gain.value = 0.0;	// audio-rate inputs are summed with initial intrinsic value
@@ -253,7 +251,7 @@ function initBandpassFilters() {
 		power.connect( lpFilter );
 //		heterodynePostGain.connect( lpFilter );
 
-		var lpFilterPostGain = audioContext.createGainNode();
+		var lpFilterPostGain = audioContext.createGain();
 		lpFilterPostGain.gain.value = 1.0; 
 		lpFilter.connect( lpFilterPostGain );
 		lpFilterPostGains.push( lpFilterPostGain );
@@ -284,13 +282,13 @@ function initBandpassFilters() {
 		carrierFilter.chainedFilter = secondCarrierFilter;
 		carrierFilter.connect( secondCarrierFilter );
 
-		var carrierFilterPostGain = audioContext.createGainNode();
+		var carrierFilterPostGain = audioContext.createGain();
 		carrierFilterPostGain.gain.value = 10.0;
 		secondCarrierFilter.connect( carrierFilterPostGain );
 		carrierFilterPostGains.push( carrierFilterPostGain );
 
 		// Create the carrier band gain node
-		var bandGain = audioContext.createGainNode();
+		var bandGain = audioContext.createGain();
 		carrierBandGains.push( bandGain );
 		carrierFilterPostGain.connect( bandGain );
 		bandGain.gain.value = 0.0;	// audio-rate inputs are summed with initial intrinsic value
@@ -395,13 +393,13 @@ function createCarriersAndPlay( output ) {
 	carrierSampleNode.buffer = carrierBuffer;
 	carrierSampleNode.loop = true;
 
-	carrierSampleGain = audioContext.createGainNode();
+	carrierSampleGain = audioContext.createGain();
 	carrierSampleGain.gain.value = carrierSampleGainValue;
 	carrierSampleNode.connect( carrierSampleGain );
 	carrierSampleGain.connect( output );
 
 	// The wavetable signal needs a boost.
-	wavetableSignalGain = audioContext.createGainNode();
+	wavetableSignalGain = audioContext.createGain();
 
 	oscillatorNode = audioContext.createOscillator();
 	if (oscillatorType = 4)	{ // wavetable
@@ -415,7 +413,7 @@ function createCarriersAndPlay( output ) {
 	oscillatorNode.detune.value = oscillatorDetuneValue;
 	oscillatorNode.connect(wavetableSignalGain);
 
-	oscillatorGain = audioContext.createGainNode();
+	oscillatorGain = audioContext.createGain();
 	oscillatorGain.gain.value = oscillatorGainValue;
 
 	wavetableSignalGain.connect(oscillatorGain);
@@ -424,16 +422,14 @@ function createCarriersAndPlay( output ) {
 	noiseNode = audioContext.createBufferSource();
 	noiseNode.buffer = noiseBuffer;
 	noiseNode.loop = true;
-	noiseGain = audioContext.createGainNode();
+	noiseGain = audioContext.createGain();
 	noiseGain.gain.value = noiseGainValue;
 	noiseNode.connect(noiseGain);
 
 	noiseGain.connect(output);
-	//TODO: the "if" clause here can be removed in future; some older Chrome builds don't have noteOn on Oscillator
-	if (oscillatorNode.noteOn)
-		oscillatorNode.noteOn(0);
-	noiseNode.noteOn(0);
-	carrierSampleNode.noteOn(0);
+	oscillatorNode.start(0);
+	noiseNode.start(0);
+	carrierSampleNode.start(0);
 
 }
 
@@ -443,7 +439,7 @@ function vocode() {
 
 	if (vocoding) {
 		if (modulatorNode)
-			modulatorNode.noteOff(0);
+			modulatorNode.stop(0);
 		shutOffCarrier();
 		vocoding = false;
 		cancelVocoderUpdates();
@@ -462,11 +458,11 @@ function vocode() {
 
 	modulatorNode = audioContext.createBufferSource();
 	modulatorNode.buffer = modulatorBuffer;
-	modulatorGain = audioContext.createGainNode();
+	modulatorGain = audioContext.createGain();
 	modulatorGain.gain.value = modulatorGainValue;
 	modulatorNode.connect( modulatorGain );
 	modulatorGain.connect( modulatorInput );
-	modulatorNode.noteOn(0);
+	modulatorNode.start(0);
 
  	window.webkitRequestAnimationFrame( updateAnalysers );
 	endOfModulatorTimer = window.setTimeout( vocode, modulatorNode.buffer.duration * 1000 + 20 );
@@ -478,9 +474,11 @@ function error() {
 
 function getUserMedia(dictionary, callback) {
     try {
-        navigator.webkitGetUserMedia(dictionary, callback, error);
+        if (!navigator.getUserMedia)
+        	navigator.getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+        navigator.getUserMedia(dictionary, callback, error);
     } catch (e) {
-        alert('webkitGetUserMedia threw exception :' + e);
+        alert('getUserMedia threw exception :' + e);
     }
 }
 
@@ -545,7 +543,7 @@ function gotStream(stream) {
     // Create an AudioNode from the stream.
     var mediaStreamSource = audioContext.createMediaStreamSource(stream);    
 
-	modulatorGain = audioContext.createGainNode();
+	modulatorGain = audioContext.createGain();
 	modulatorGain.gain.value = modulatorGainValue;
 	modulatorGain.connect( modulatorInput );
 
@@ -565,7 +563,7 @@ function gotStream(stream) {
 function useLiveInput() {
 	if (vocoding) {
 		if (modulatorNode)
-			modulatorNode.noteOff(0);
+			modulatorNode.stop(0);
 		shutOffCarrier();
 		vocoding = false;
 		cancelVocoderUpdates();
