@@ -192,7 +192,11 @@ function selectWavetable() {
 	if ( wavetableSignalGain )
 		wavetableSignalGain.gain.value = WAVETABLEBOOST;
 	if (oscillatorNode)
-		oscillatorNode.setWaveTable( wavetable );
+		oscillatorNode.setPeriodicWave ? 
+			oscillatorNode.setPeriodicWave(wavetable) :
+			oscillatorNode.setWaveTable(wavetable);
+	wavetableSignalGain.gain.value = WAVETABLEBOOST;
+
 	document.getElementById("sawtooth").classList.remove("active");
 	document.getElementById("wavetable").classList.add("active");
 }

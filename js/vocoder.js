@@ -192,6 +192,10 @@ function initBandpassFilters() {
 	var outputGain = audioContext.createGain();
 	outputGain.connect(audioContext.destination);
 
+	var rectifierCurve = new Float32Array(65536);
+	for (var i=-32768; i<32768; i++)
+		rectifierCurve[i+32768] = ((i>0)?i:-i)/32768;
+
 	for (var i=0; i<numVocoderBands; i++) {
 		// CREATE THE MODULATOR CHAIN
 		// create the bandpass filter in the modulator chain
@@ -235,12 +239,11 @@ function initBandpassFilters() {
 		heterodyne.connect( heterodynePostGain );
 		heterodynes.push( heterodynePostGain );
 
-		// Create the power node
-		var power = audioContext.createGain();
-		powers.push( power );
-		heterodynePostGain.connect( power );
-		power.gain.value = 0.0;	// audio-rate inputs are summed with initial intrinsic value
-		heterodynePostGain.connect( power.gain );
+
+		// Create the rectifier node
+		var rectifier = audioContext.createWaveShaper();
+		rectifier.curve = rectifierCurve;
+		heterodynePostGain.connect( rectifier );
 
 		// Create the lowpass filter to mask off the difference (near zero)
 		var lpFilter = audioContext.createBiquadFilter();
@@ -248,8 +251,7 @@ function initBandpassFilters() {
 		lpFilter.frequency.value = 5.0;	// Guesstimate!  Mask off 20Hz and above.
 		lpFilter.Q.value = 1;	// don't need a peak
 		lpFilters.push( lpFilter );
-		power.connect( lpFilter );
-//		heterodynePostGain.connect( lpFilter );
+		rectifier.connect( lpFilter );
 
 		var lpFilterPostGain = audioContext.createGain();
 		lpFilterPostGain.gain.value = 1.0; 
@@ -338,7 +340,9 @@ function initBandpassFilters() {
 		imag[i]=1.0;
 	}
 
-	wavetable = audioContext.createWaveTable(real, imag);
+	wavetable = (audioContext.createPeriodicWave) ?
+		audioContext.createPeriodicWave(real, imag) :
+		audioContext.createWaveTable(real, imag);
 	loadNoiseBuffer();
 
 }
@@ -403,6 +407,8 @@ function createCarriersAndPlay( output ) {
 
 	oscillatorNode = audioContext.createOscillator();
 	if (oscillatorType = 4)	{ // wavetable
+		oscillatorNode.setPeriodicWave ? 
+		oscillatorNode.setPeriodicWave(wavetable) :
 		oscillatorNode.setWaveTable(wavetable);
 		wavetableSignalGain.gain.value = WAVETABLEBOOST;
 	} else {
