@@ -381,14 +381,24 @@ function cancelVocoderUpdates() {
 	rafID = null;
 }
 
+var gotError = false;
+
 function updateAnalysers(time) {
 //	if ( outputAnalyser )
 //		updateAnalyser( outputAnalyser, outputCanvas );
 		
-	analyserView1.doFrequencyAnalysis( analyser1 );
-	analyserView2.doFrequencyAnalysis( analyser2 );
 	drawVocoderGains();
-	
+
+	try {
+		analyserView1.doFrequencyAnalysis( analyser1 );
+		analyserView2.doFrequencyAnalysis( analyser2 );
+	} catch ( e ) {
+		if (!gotError){
+			console.warn('WebGL might not be supported by your browser or your hardware. Only 2D graph will be enabled.');
+			gotError = true; // Avoid multiple logs if error occurred
+		}
+		
+	}
   	rafID = window.webkitRequestAnimationFrame( updateAnalysers );
 }
 
@@ -457,6 +467,8 @@ function vocode() {
 		finishPreviewingCarrier();
 	else if (document.getElementById("modulatorpreview").classList.contains("playing") )
 		finishPreviewingModulator();
+
+	setupVocoderGraph();
 
 	createCarriersAndPlay( carrierInput );
 
@@ -559,6 +571,8 @@ function gotStream(stream) {
     //create a noise gate
     monoSource.connect( createNoiseGate( modulatorGain ) );
 
+	setupVocoderGraph();
+	
 	createCarriersAndPlay( carrierInput );
 
 	vocoding = true;
