@@ -35,7 +35,6 @@ var GAINS_CANVAS_HEIGHT = 100;
 var FILTER_QUALITY = 6;  // The Q value for the carrier and modulator filters
 
 var animationRunning = false;
-var outputAnalyser = null;
 
 // These are "placeholder" gain nodes - because the modulator and carrier will get swapped in
 // as they are loaded, it's easier to connect these nodes to all the bands, and the "real"
@@ -297,18 +296,6 @@ function initBandpassFilters() {
 		waveshaper.connect( bandGain.gain );	// connect the lp controller
 
 		bandGain.connect( outputGain );
-
-		// Debugging visualizer
-		if ( i == DEBUG_BAND ) {
-//			modulatorFilterPostGain.connect( carrierAnalyser );
-
-//			modulatorFilterPostGain.connect( outputAnalyser );
-
-//			carrierFilterPostGain.connect( analyser1 );
-//			analyserView1.setOverlayText( "carrierFilterPostGain" );
-//			lpFilterPostGain.connect( analyser2 );
-//			analyserView2.setOverlayText( "lpFilterPostGain" );
-		}
 	}
 
 	addSingleValueSlider( "hi-pass gain", hpFilterGain.gain.value, 0.0, 1.0, hpFilterGain, updateSingleGain );
@@ -348,13 +335,8 @@ function initBandpassFilters() {
 }
 
 function setupVocoderGraph() {
-	outputAnalyser = audioContext.createAnalyser();
-	outputAnalyser.fftSize = 2048;
-	outputAnalyser.smoothingTimeConstant = 0.0;
 	initBandpassFilters();
 }
-
-
 
 function drawVocoderGains() {
 	vocoderCanvas.clearRect(0, 0, CANVAS_WIDTH, GAINS_CANVAS_HEIGHT);
@@ -374,6 +356,21 @@ function drawVocoderGains() {
 	}
 }
 
+function drawFreqAnalysis( analyser, canvas ) {
+	canvas.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+	var numBins = analyser.frequencyBinCount;
+	var binWidth = (CANVAS_WIDTH / numBins);
+	var bins = new Uint8Array(numBins);
+	var SCALAR = CANVAS_HEIGHT/256;
+	analyser.getByteFrequencyData(bins);
+
+	// Draw rectangle for each vocoder bin.
+	for (var i = 0; i < numBins; i++) {
+    	canvas.fillStyle = "hsl( " + Math.round((i*360)/numBins) + ", 100%, 50%)";
+    	canvas.fillRect(i * binWidth, CANVAS_HEIGHT, binWidth, -bins[i]*SCALAR );
+	}
+}
+
 var rafID = null;
 
 function cancelVocoderUpdates() {
@@ -382,11 +379,13 @@ function cancelVocoderUpdates() {
 }
 
 function updateAnalysers(time) {
-//	if ( outputAnalyser )
-//		updateAnalyser( outputAnalyser, outputCanvas );
-		
-	analyserView1.doFrequencyAnalysis( analyser1 );
-	analyserView2.doFrequencyAnalysis( analyser2 );
+	if (cheapAnalysis) {
+		drawFreqAnalysis( analyser1, analyserView1 );
+		drawFreqAnalysis( analyser2, analyserView2 );
+	} else {
+		analyserView1.doFrequencyAnalysis( analyser1 );
+		analyserView2.doFrequencyAnalysis( analyser2 );
+	}
 	drawVocoderGains();
 	
   	rafID = window.webkitRequestAnimationFrame( updateAnalysers );
@@ -635,17 +634,3 @@ window.addEventListener('keydown', function(ev) {
         oscillatorNode.detune.value = centOffset;
 
     }, false);
-
-//  Notes for band-pass filter approach:
-// The general approach is to feed the modulator signal through a bank of tuned band-pass filters.
-// Each band-pass filter should then be multiplied by a sine wave at the band's center frequency
-// (this is accomplished by feeding the sine wave audio signal into a gain node's gain AudioParam -
-// AudioNode.connect() now has a prototype that takes an AudioParam as an input.)  To obtain power,
-// the output of this multiplication should then be multipled by itself (again, via GainNode.gain),
-// then fed through a low-pass filter capped at 8Hz-200Hz (experimentation time!) to remove the
-// double-frequency signal.[1]  This should give the effect of an envelope follower - which can then
-// be fed into a gain node on a band-pass'ed instance of the carrier signal, as in other approach.
-//
-// [1] From http://en.wikipedia.org/wiki/Heterodyne - multiplying signals in this way creates two
-// new signals, one at the sum f1 + f2 of the frequencies, and the other at the difference f1 - f2.
-// Masking off the upper will result in obtaining the power signal.

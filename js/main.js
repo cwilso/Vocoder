@@ -34,7 +34,7 @@ var carrierBuffer = null;
 var modulatorNode = null;
 var carrierNode = null;
 var vocoding = false;
-
+var cheapAnalysis = true;
 
 // Debug visualizer stuff here
 var analyser1;
@@ -45,7 +45,13 @@ var analyserView2;
 //constants for carrier buttons
 var FILE = 0, SAWTOOTH=1, WAVETABLE=2, FILENAME=-1;
 
-o3djs.require('o3djs.shader');
+cheapAnalysis = (navigator.userAgent.indexOf("Android")!=-1)||(navigator.userAgent.indexOf("iPad")!=-1)||(navigator.userAgent.indexOf("iPhone")!=-1);;
+
+if (!cheapAnalysis)
+	o3djs.require('o3djs.shader');
+else
+	document.write("<style>.header {background:gray}</style>")
+
 
 var carrierAnalyserNode = null;
 
@@ -398,14 +404,21 @@ function init() {
 
 	// Debug visualizer
     analyser1 = audioContext.createAnalyser();
-    analyser1.fftSize = 1024;
+    analyser1.fftSize = cheapAnalysis ? 512 : 1024;
+    analyser1.smoothingTimeConstant = 0.5;
     analyser2 = audioContext.createAnalyser();
-    analyser2.fftSize = 1024;
+    analyser2.fftSize = cheapAnalysis ? 512 : 1024;
+    analyser2.smoothingTimeConstant = 0.5;
 
-    analyserView1 = new AnalyserView("view1");
-    analyserView1.initByteBuffer( analyser1 );
-    analyserView2 = new AnalyserView("view2");
-    analyserView2.initByteBuffer( analyser2 );
+    if (cheapAnalysis) {
+    	analyserView1 = document.getElementById("view1").getContext('2d');
+    	analyserView2 = document.getElementById("view2").getContext('2d');
+    } else {
+	    analyserView1 = new AnalyserView("view1");
+	    analyserView1.initByteBuffer( analyser1 );
+	    analyserView2 = new AnalyserView("view2");
+	    analyserView2.initByteBuffer( analyser2 );
+	}
 
     // Set up the vocoder chains
     setupVocoderGraph();
