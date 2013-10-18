@@ -359,6 +359,7 @@ function drawVocoderGains() {
 function drawFreqAnalysis( analyser, canvas ) {
 	canvas.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 	var numBins = analyser.frequencyBinCount;
+	numBins = numBins /4;  // this is JUST to drop the top half of the frequencies - they're not interesting.
 	var binWidth = (CANVAS_WIDTH / numBins);
 	var bins = new Uint8Array(numBins);
 	var SCALAR = CANVAS_HEIGHT/256;

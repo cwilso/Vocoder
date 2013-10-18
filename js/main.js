@@ -392,7 +392,7 @@ function init() {
 
 	initDragDropOfAudioFiles();	// set up panels as drop sites for audio files
 
-	generateVocoderBands( 55, 7040, 28 );
+	generateVocoderBands( 55, 7040, cheapAnalysis ? 14 : 28 );
 
 // I used to have another debugging visualizer.
 //	outputCanvas = document.getElementById("ocanvas").getContext('2d');
@@ -404,10 +404,10 @@ function init() {
 
 	// Debug visualizer
     analyser1 = audioContext.createAnalyser();
-    analyser1.fftSize = cheapAnalysis ? 512 : 1024;
+    analyser1.fftSize = cheapAnalysis ? 256 : 1024;
     analyser1.smoothingTimeConstant = 0.5;
     analyser2 = audioContext.createAnalyser();
-    analyser2.fftSize = cheapAnalysis ? 512 : 1024;
+    analyser2.fftSize = cheapAnalysis ? 256 : 1024;
     analyser2.smoothingTimeConstant = 0.5;
 
     if (cheapAnalysis) {
