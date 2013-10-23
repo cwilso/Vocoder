@@ -544,6 +544,16 @@ function createNoiseGate( connectTo ) {
     return inputNode;
 }
 
+var lpInputFilter=null;
+
+// this is ONLY because we have massive feedback without filtering out
+// the top end in live speaker scenarios.
+function createLPInputFilter(output) {
+	lpInputFilter = audioContext.createBiquadFilter();
+	lpInputFilter.connect(output);
+	lpInputFilter.frequency.value = 2048;
+	return lpInputFilter;
+}
 
 function gotStream(stream) {
     // Create an AudioNode from the stream.
@@ -557,7 +567,7 @@ function gotStream(stream) {
     var monoSource = convertToMono( mediaStreamSource );
 
     //create a noise gate
-    monoSource.connect( createNoiseGate( modulatorGain ) );
+    monoSource.connect( createLPInputFilter( createNoiseGate( modulatorGain ) ) );
 
 	createCarriersAndPlay( carrierInput );
 
