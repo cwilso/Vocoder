@@ -38,8 +38,9 @@
 </head>
 <body>
 	<div id="main" class="container">
-		<header class="header">
-			<img src="img/logo.png" alt="Web Audio Vocoder" />	
+		<header id="header">
+			<img src="img/logo.png" alt="Web Audio Vocoder" />
+			<span id="mobile">{mobile}</span>
 		</header>
 		<section id="content">
 			<div id="modules">
@@ -138,7 +139,7 @@
 
 		<div id="sliders"></div>
 	</div>
-	<a href="https://github.com/cwilso/vocoder" target="_new" class="header" style="position: absolute; z-index:2; top: 0; right: 0; border: 0;"><img src="img/forkme.png" alt="Fork me on GitHub"></a>
+	<a href="https://github.com/cwilso/vocoder" target="_new" id="footer" style="position: absolute; z-index:2; top: 0; right: 0; border: 0;"><img src="img/forkme.png" alt="Fork me on GitHub"></a>
 	<div style="visibility:hidden; width: 1px; height: 1px" id="MIDIPlugin"></div>
 </body>
 </html>

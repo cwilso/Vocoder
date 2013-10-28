@@ -8,12 +8,18 @@
  *	- Links
  *	-------------------------------------------------------------------------*/
 
+.notready h6 {
+	background: red;
+}
+
 div.link {
 	font-style: italic;
 	color: lightgrey;
 	margin-left: 780px;
 	margin-top: 5px;
 }
+
+#mobile { display: none; margin-left: 1em; color: lightgrey;}
 
 div.link a {
 	color: white;
@@ -84,6 +90,7 @@ body {
 	padding: 1em 0 0 1em;	
 }
 
+#footer { margin: 0; padding: 0;}
 
 /*	---------------------------------------------------------------------------
  *	:: Modules

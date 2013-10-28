@@ -448,6 +448,7 @@ function vocode() {
 			modulatorNode.stop(0);
 		shutOffCarrier();
 		vocoding = false;
+		liveInput = false;
 		cancelVocoderUpdates();
 		if (endOfModulatorTimer)
 			window.clearTimeout(endOfModulatorTimer);
@@ -555,6 +556,8 @@ function createLPInputFilter(output) {
 	return lpInputFilter;
 }
 
+var liveInput = false;
+
 function gotStream(stream) {
     // Create an AudioNode from the stream.
     var mediaStreamSource = audioContext.createMediaStreamSource(stream);    
@@ -572,6 +575,7 @@ function gotStream(stream) {
 	createCarriersAndPlay( carrierInput );
 
 	vocoding = true;
+	liveInput = true;
 
  	window.webkitRequestAnimationFrame( updateAnalysers );
 }

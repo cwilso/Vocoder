@@ -50,7 +50,7 @@ cheapAnalysis = (navigator.userAgent.indexOf("Android")!=-1)||(navigator.userAge
 if (!cheapAnalysis)
 	o3djs.require('o3djs.shader');
 else
-	document.write("<style>.header {background:gray}</style>")
+	document.write("<style>#mobile {display:inline} #footer {display:none}</style>")
 
 
 var carrierAnalyserNode = null;
@@ -169,6 +169,9 @@ function loadCarrier( buffer ) {
 		carrierNode.stop(0);
 		carrierNode = newCarrierNode;	
 	}
+	var e = document.getElementById("carrier");
+	e.classList.remove("notready");  
+	e.classList.add("ready");
 }
 
 function downloadAudioFromURL( url, cb ){
@@ -228,12 +231,20 @@ function setCarrierFileName( url ) {
 }
 
 function startLoadingModulator( url ) {
+	var e = document.getElementById("modulator");
+	e.classList.remove("ready");  
+	e.classList.add("notready");
+
 	modulatorBuffer = null;
 	setModulatorFileName( url );
 	downloadAudioFromURL( url, loadModulator );
 }
 
 function startLoadingCarrier( url ) {
+	var e = document.getElementById("carrier");
+	e.classList.remove("ready");  
+	e.classList.add("notready");
+
 	carrierBuffer = null;
 	setCarrierFileName( url )
 	downloadAudioFromURL( url, loadCarrier );
