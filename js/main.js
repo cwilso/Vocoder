@@ -81,7 +81,7 @@ function previewCarrier() {
 
 	createCarriersAndPlay( carrierAnalyserNode );
 
-  	window.webkitRequestAnimationFrame( updateAnalysers );
+  	window.requestAnimationFrame( updateAnalysers );
 
 }
 
@@ -134,7 +134,7 @@ function previewModulator() {
 
 	modulatorNode.start(0);
 
-  	window.webkitRequestAnimationFrame( updateAnalysers );
+  	window.requestAnimationFrame( updateAnalysers );
 	endOfModulatorTimer = window.setTimeout( finishPreviewingModulator, modulatorNode.buffer.duration * 1000 + 20 );
 }
 
@@ -369,6 +369,8 @@ function loadCarrierFile() {
 
 // Initialization function for the page.
 function init() {
+	window.requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
+	window.cancelAnimationFrame = window.cancelAnimationFrame || window.webkitCancelAnimationFrame;
 	window.applicationCache.addEventListener('updateready', function(e) {
 	  	if (window.applicationCache.status == window.applicationCache.UPDATEREADY) {
 	    	// Browser downloaded a new app cache.

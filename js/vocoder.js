@@ -375,7 +375,7 @@ function drawFreqAnalysis( analyser, canvas ) {
 var rafID = null;
 
 function cancelVocoderUpdates() {
-	window.webkitCancelAnimationFrame( rafID );
+	window.cancelAnimationFrame( rafID );
 	rafID = null;
 }
 
@@ -389,7 +389,7 @@ function updateAnalysers(time) {
 	}
 	drawVocoderGains();
 	
-  	rafID = window.webkitRequestAnimationFrame( updateAnalysers );
+  	rafID = window.requestAnimationFrame( updateAnalysers );
 }
 
 function createCarriersAndPlay( output ) {
@@ -471,7 +471,7 @@ function vocode() {
 	modulatorGain.connect( modulatorInput );
 	modulatorNode.start(0);
 
- 	window.webkitRequestAnimationFrame( updateAnalysers );
+ 	window.requestAnimationFrame( updateAnalysers );
 	endOfModulatorTimer = window.setTimeout( vocode, modulatorNode.buffer.duration * 1000 + 20 );
 }
 
@@ -577,7 +577,7 @@ function gotStream(stream) {
 	vocoding = true;
 	liveInput = true;
 
- 	window.webkitRequestAnimationFrame( updateAnalysers );
+ 	window.requestAnimationFrame( updateAnalysers );
 }
 
 function useLiveInput() {
