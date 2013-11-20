@@ -441,7 +441,7 @@ function init() {
 	var slider = document.createElement("div");
 	slider.className="slider";
 	document.getElementById("modgaingroup").appendChild(slider);
-	$( slider ).slider( { slide: onUpdateModGain, value: 1.0, min: 0.0, max: 4.0, step: 0.1 } );
+	$( slider ).slider( { slide: onUpdateModGain, value: (cheapAnalysis) ? 2.5 : 1.0, min: 0.0, max: 4.0, step: 0.1 } );
 	slider.units = "";
 
 	slider = document.createElement("div");
