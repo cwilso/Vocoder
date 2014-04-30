@@ -371,6 +371,7 @@ function loadCarrierFile() {
 function init() {
 	window.requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
 	window.cancelAnimationFrame = window.cancelAnimationFrame || window.webkitCancelAnimationFrame;
+	window.AudioContext = window.AudioContext || window.webkitAudioContext;
 	window.applicationCache.addEventListener('updateready', function(e) {
 	  	if (window.applicationCache.status == window.applicationCache.UPDATEREADY) {
 	    	// Browser downloaded a new app cache.
