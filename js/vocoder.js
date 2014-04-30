@@ -106,6 +106,7 @@ function generateVocoderBands( startFreq, endFreq, numBands ) {
 	for (var i=0; i<numBands; i++) {
 		vocoderBands[i] = new Object();
 		vocoderBands[i].frequency = currentFreq;
+//		console.log( "Band " + i + " centered at " + currentFreq + "Hz" );
 		currentFreq = currentFreq * scale;
 	}
 
@@ -199,7 +200,7 @@ function initBandpassFilters() {
 		// CREATE THE MODULATOR CHAIN
 		// create the bandpass filter in the modulator chain
 		var modulatorFilter = audioContext.createBiquadFilter();
-		modulatorFilter.type = modulatorFilter.BANDPASS;	// Bandpass filter
+		modulatorFilter.type = "bandpass";	// Bandpass filter
 		modulatorFilter.frequency.value = vocoderBands[i].frequency;
 		modulatorFilter.Q.value = FILTER_QUALITY; // 	initial quality
 		modulatorInput.connect( modulatorFilter );
@@ -209,7 +210,7 @@ function initBandpassFilters() {
 		// this turns our second-order filter into a 4th-order filter,
 		// which has a steeper rolloff/octave
 		var secondModulatorFilter = audioContext.createBiquadFilter();
-		secondModulatorFilter.type = secondModulatorFilter.BANDPASS;	// Bandpass filter
+		secondModulatorFilter.type = "bandpass";	// Bandpass filter
 		secondModulatorFilter.frequency.value = vocoderBands[i].frequency;
 		secondModulatorFilter.Q.value = FILTER_QUALITY; // 	initial quality
 		modulatorFilter.chainedFilter = secondModulatorFilter;
@@ -217,7 +218,7 @@ function initBandpassFilters() {
 
 		// create a post-filtering gain to bump the levels up.
 		var modulatorFilterPostGain = audioContext.createGain();
-		modulatorFilterPostGain.gain.value = 6.0;
+		modulatorFilterPostGain.gain.value = 6;
 		secondModulatorFilter.connect( modulatorFilterPostGain );
 		modFilterPostGains.push( modulatorFilterPostGain );
 
@@ -246,7 +247,7 @@ function initBandpassFilters() {
 
 		// Create the lowpass filter to mask off the difference (near zero)
 		var lpFilter = audioContext.createBiquadFilter();
-		lpFilter.type = 0;	// Lowpass filter
+		lpFilter.type = "lowpass";	// Lowpass filter
 		lpFilter.frequency.value = 5.0;	// Guesstimate!  Mask off 20Hz and above.
 		lpFilter.Q.value = 1;	// don't need a peak
 		lpFilters.push( lpFilter );
@@ -269,7 +270,7 @@ function initBandpassFilters() {
 
 		// Create the bandpass filter in the carrier chain
 		var carrierFilter = audioContext.createBiquadFilter();
-		carrierFilter.type = carrierFilter.BANDPASS;
+		carrierFilter.type = "bandpass";
 		carrierFilter.frequency.value = vocoderBands[i].frequency;
 		carrierFilter.Q.value = FILTER_QUALITY;
 		carrierBands.push( carrierFilter );
@@ -277,7 +278,7 @@ function initBandpassFilters() {
 
 		// We want our carrier filters to be 4th-order filter too.
 		var secondCarrierFilter = audioContext.createBiquadFilter();
-		secondCarrierFilter.type = secondCarrierFilter.BANDPASS;	// Bandpass filter
+		secondCarrierFilter.type = "bandpass";	// Bandpass filter
 		secondCarrierFilter.frequency.value = vocoderBands[i].frequency;
 		secondCarrierFilter.Q.value = FILTER_QUALITY; // 	initial quality
 		carrierFilter.chainedFilter = secondCarrierFilter;
