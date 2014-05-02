@@ -164,9 +164,9 @@ function initBandpassFilters() {
     generateMirrorCurve(waveShaperCurve);	// Populate with a curve that soft-clips AND does an abs()
 	
 	// Set up a high-pass filter to add back in the fricatives, etc.
-	// (this isn't used in the "production" version, as I hid the slider)
+	// (this isn't used by default in the "production" version, as I hid the slider)
 	var hpFilter = audioContext.createBiquadFilter();
-	hpFilter.type = hpFilter.HIGHPASS;	// Bandpass filter
+	hpFilter.type = "highpass";
 	hpFilter.frequency.value = 8000; // or use vocoderBands[numVocoderBands-1].frequency;
 	hpFilter.Q.value = 1; // 	no peaking
 	modulatorInput.connect( hpFilter);

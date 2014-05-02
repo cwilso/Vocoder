@@ -192,7 +192,7 @@ function selectSawtooth() {
 	if ( wavetableSignalGain )
 		wavetableSignalGain.gain.value = SAWTOOTHBOOST;
 	if (oscillatorNode)
-		oscillatorNode.type = oscillatorNode.SAWTOOTH;
+		oscillatorNode.type = "sawtooth";
 	document.getElementById("sawtooth").classList.add("active");
 	document.getElementById("wavetable").classList.remove("active");
 }
