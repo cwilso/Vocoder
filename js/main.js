@@ -255,10 +255,11 @@ function startLoadingCarrier( url ) {
 function initDragDropOfAudioFiles() {
 	var mod = document.getElementById("modulator");
 	
-	mod.ondragenter = function () { 
+	mod.ondragover = function () { 
 		this.classList.add("droptarget"); 
 		return false; };
 	mod.ondragleave = function () { this.classList.remove("droptarget"); return false; };
+	mod.ondragend = function () { this.classList.remove("droptarget"); return false; };
 	mod.ondrop = function (e) {
   		this.classList.remove("droptarget");
   		e.preventDefault();
@@ -280,10 +281,11 @@ function initDragDropOfAudioFiles() {
 	};	
 	var car = document.getElementById("carrier");
 	
-	car.ondragenter = function () { this.classList.add("hover"); return false; };
-	car.ondragleave = function () { this.classList.remove("hover"); return false; };
+	car.ondragover = function () { this.classList.add("droptarget"); return false; };
+	car.ondragleave = function () { this.classList.remove("droptarget"); return false; };
+	car.ondragend = function () { this.classList.remove("droptarget"); return false; };
 	car.ondrop = function (e) {
-  		this.classList.remove("hover");
+  		this.classList.remove("droptarget");
   		e.preventDefault();
 		carrierBuffer = null;
 		setCarrierFileName( e.dataTransfer.files[0].name );
