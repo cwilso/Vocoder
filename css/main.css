@@ -349,7 +349,7 @@ body {
 	margin-bottom: -2px;
 } 
 
-#modulator.droptarget { outline: 1px solid red;}
+#modulator.droptarget, #carrier.droptarget { outline: 1px solid red; opacity: 0.5;}
 
 /*	---------------------------------------------------------------------------
  *	:: Global classes and styles
