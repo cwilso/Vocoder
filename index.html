@@ -25,16 +25,17 @@
 	<script src="js/visualizer/visualizer.js"></script>
 	<script src="js/visualizer/shader.js"></script>
 
-    <script src="http://cwilso.github.io/AudioContext-MonkeyPatch/AudioContextMonkeyPatch.js"></script>
-
 	<script src="js/ui.js"></script>
 	<script src="js/main.js"></script>
 	<script src='http://cwilso.github.com/WebMIDIAPIShim/WebMIDIAPI.js'></script>
-	<ascript src="js/WebMIDIAPI.js"></ascript>
 	<script src="js/midi.js"></script>
 	<script src="js/vocoder.js"></script>
 	<script src="js/waveshaper.js"></script>
 	<script src="js/sliders.js"></script>
+
+	// For recording the audio
+	<script src="js/recorderjs/recorder.js"></script>
+
 </head>
 <body>
 	<div id="main" class="container">
@@ -102,6 +103,8 @@
 			</div> <!-- /#modules -->
 			<div id="connection">
 				<a href="#" id="play">Play</a>
+				<img id="record" src="img/mic128.png">
+				<a href="#" id="recfile"></a>
 			</div> <!-- /#connection -->
 			<div id="results" class="container">
 				<h2 class="before">input</h2>

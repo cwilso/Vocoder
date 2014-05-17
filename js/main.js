@@ -387,10 +387,6 @@ function init() {
 	  	}
 	}, false);
 
-//TODO: fix this up.
-//	if (window != window.top)
-//		document.write("<style>.header {display:none}</style>")
-
 	document.getElementById("modpreview").addEventListener('click', previewModulator );
 	document.getElementById("liveInput").addEventListener('click', useLiveInput );
 	document.getElementById("loadcarrier").addEventListener('click', loadCarrierFile );
@@ -398,6 +394,8 @@ function init() {
 	document.getElementById("wavetable").addEventListener('click', selectWavetable );
 	document.getElementById("previewcarrier").addEventListener('click', previewCarrier );
 	document.getElementById("play").addEventListener('click', vocode );
+
+	document.getElementById("record").addEventListener('click', toggleRecording );
 
   	try {
     	audioContext = new AudioContext();
@@ -488,6 +486,44 @@ function keyevent( event ) {
 	if (event)
 		return;
 }
+
+var recording=false;
+var recIndex=0;
+var audioRecorder=null;
+
+function toggleRecording() {
+	if (recording) {
+        // stop recording
+        audioRecorder.stop();
+        document.getElementById("record").classList.remove("recording");
+        audioRecorder.getBuffers( gotBuffers );
+	} else {
+        // start recording
+        if (!audioRecorder)
+		    audioRecorder = new Recorder( analyser2 );
+
+        document.getElementById("record").classList.add("recording");
+        var link = $("recfile");
+        link.href = "#";
+		link.innerText = "";
+        audioRecorder.clear();
+        audioRecorder.record();
+	}
+	recording = !recording;
+}
+
+function gotBuffers( buffers ) {
+    // the ONLY time gotBuffers is called is right after a new recording is completed - 
+    // so here's where we should set up the download.
+    audioRecorder.exportWAV( doneEncoding );
+}
+
+function doneEncoding( blob ) {
+    Recorder.setupDownload( blob, "myRecording" + ((recIndex<10)?"0":"") + recIndex + ".wav" );
+    document.getElementById("recfile").innerText = "download";
+    recIndex++;
+}
+
 
 window.onload=init;
 window.onkeydown=keyevent();

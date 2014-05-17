@@ -308,6 +308,25 @@ body {
 	background-position: -152px 0;
 }
 
+#record {
+    width: 64px;
+    height: 64px;
+    margin: 20px auto 10px;
+    display: block;
+}
+
+#record.recording {
+	abackground: red;
+	background: -webkit-radial-gradient(center, ellipse cover, #ff0000 0%,transparent 75%,transparent 100%,transparent 100%); 
+	background: -moz-radial-gradient(center, ellipse cover, #ff0000 0%,transparent 75%,transparent 100%,transparent 100%); 
+	background: radial-gradient(center, ellipse cover, #ff0000 0%,transparent 75%,transparent 100%,transparent 100%); 
+}
+
+#recfile {
+color: lightblue;
+display: block;
+text-align: center;
+}
 
 /*	---------------------------------------------------------------------------
  *	:: Results
