@@ -161,7 +161,16 @@ function initBandpassFilters() {
 		carrierBandGains = new Array();
 
     var waveShaperCurve = new Float32Array(65536);
-    generateMirrorCurve(waveShaperCurve);	// Populate with a curve that soft-clips AND does an abs()
+	// Populate with a "curve" that does an abs()
+    var n = 65536;
+    var n2 = n / 2;
+    
+    for (var i = 0; i < n2; ++i) {
+        x = i / n2;
+        
+        waveShaperCurve[n2 + i] = x;
+        waveShaperCurve[n2 - i - 1] = x;
+    }
 	
 	// Set up a high-pass filter to add back in the fricatives, etc.
 	// (this isn't used by default in the "production" version, as I hid the slider)
