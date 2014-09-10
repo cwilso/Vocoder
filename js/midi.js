@@ -123,9 +123,14 @@ var midiIn = null;
 
 function gotMIDI( midiAccess ) {
   midi = midiAccess;
-  var ins = midiAccess.inputs();
-  for (var i=0; i<ins.length; i++)
-    ins[i].onmidimessage = midiMessageReceived;
+  if ((typeof(midiAccess.inputs) == "function")) {  //Old Skool MIDI inputs() code
+    var ins = midiAccess.inputs();
+    for (var i=0; i<ins.length; i++)
+      ins[i].onmidimessage = midiMessageReceived;
+  } else {
+    for (var input of midiAccess.inputs.values())
+      input.onmidimessage = midiMessageReceived;
+  }
 }
 
 function didntGetMIDI( error ) {
