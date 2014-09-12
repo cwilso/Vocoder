@@ -128,8 +128,9 @@ function gotMIDI( midiAccess ) {
     for (var i=0; i<ins.length; i++)
       ins[i].onmidimessage = midiMessageReceived;
   } else {
-    for (var input of midiAccess.inputs.values())
-      input.onmidimessage = midiMessageReceived;
+    inputs=midiAccess.inputs.values();
+    for ( var input = inputs.next(); input; input = inputs.next())
+      input.value.onmidimessage = midiMessageReceived;
   }
 }
 
