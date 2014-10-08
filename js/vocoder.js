@@ -605,7 +605,17 @@ function useLiveInput() {
 	else if (document.getElementById("modulatorpreview").classList.contains("playing") )
 		finishPreviewingModulator();
 
-    getUserMedia({audio:true}, gotStream);	
+    getUserMedia(        {
+            "audio": {
+                "mandatory": {
+                    "googEchoCancellation": "false",
+                    "googAutoGainControl": "false",
+                    "googNoiseSuppression": "false",
+                    "googHighpassFilter": "false"
+                },
+                "optional": []
+            },
+        }, gotStream);	
 }
 
 window.addEventListener('keydown', function(ev) {
