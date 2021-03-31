@@ -374,7 +374,7 @@ function init() {
 	window.requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
 	window.cancelAnimationFrame = window.cancelAnimationFrame || window.webkitCancelAnimationFrame;
 	window.AudioContext = window.AudioContext || window.webkitAudioContext;
-	window.applicationCache.addEventListener('updateready', function(e) {
+/*	window.applicationCache.addEventListener('updateready', function(e) {
 	  	if (window.applicationCache.status == window.applicationCache.UPDATEREADY) {
 	    	// Browser downloaded a new app cache.
 		    // Swap it in and reload the page to get the new hotness.
@@ -386,7 +386,7 @@ function init() {
 	    	// Manifest didn't changed. Nothing new to server.
 	  	}
 	}, false);
-
+*/
 	document.getElementById("modpreview").addEventListener('click', previewModulator );
 	document.getElementById("liveInput").addEventListener('click', useLiveInput );
 	document.getElementById("loadcarrier").addEventListener('click', loadCarrierFile );
