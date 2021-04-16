@@ -160,14 +160,14 @@ function loadModulator( buffer ) {
 function loadCarrier( buffer ) {
 	carrierBuffer = buffer;
 	if (vocoding) {
-		newCarrierNode = audioContext.createBufferSource();
-		newCarrierNode.buffer = carrierBuffer;
-		newCarrierNode.loop = true;
-		newCarrierNode.connect( carrierInput );
-		carrierNode.disconnect();
-		newCarrierNode.start(0);
-		carrierNode.stop(0);
-		carrierNode = newCarrierNode;	
+		newCarrierSampleNode = audioContext.createBufferSource();
+		newCarrierSampleNode.buffer = carrierBuffer;
+		newCarrierSampleNode.loop = true;
+		newCarrierSampleNode.connect( carrierInput );
+		carrierSampleNode.disconnect();
+		newCarrierSampleNode.start(0);
+		carrierSampleNode.stop(0);
+		carrierSampleNode = newCarrierSampleNode;	
 	}
 	var e = document.getElementById("carrier");
 	e.classList.remove("notready");  
