@@ -261,6 +261,8 @@ function initDragDropOfAudioFiles() {
 	mod.ondragleave = function () { this.classList.remove("droptarget"); return false; };
 	mod.ondragend = function () { this.classList.remove("droptarget"); return false; };
 	mod.ondrop = function (e) {
+		  if (!audioContext)
+		  	initAudio();
   		this.classList.remove("droptarget");
   		e.preventDefault();
 		modulatorBuffer = null;
@@ -369,24 +371,39 @@ function loadCarrierFile() {
 	alert("Try dropping a file onto the carrier.");
 }
 
+function initAudio() {
+	generateVocoderBands( 55, 7040, cheapAnalysis ? 14 : 28 );
+
+	// Debug visualizer
+  analyser1 = audioContext.createAnalyser();
+  analyser1.fftSize = cheapAnalysis ? 256 : 1024;
+  analyser1.smoothingTimeConstant = 0.5;
+  analyser2 = audioContext.createAnalyser();
+  analyser2.fftSize = cheapAnalysis ? 256 : 1024;
+  analyser2.smoothingTimeConstant = 0.5;
+
+  if (cheapAnalysis) {
+  	analyserView1 = document.getElementById("view1").getContext('2d');
+  	analyserView2 = document.getElementById("view2").getContext('2d');
+  } else {
+    analyserView1 = new AnalyserView("view1");
+    analyserView1.initByteBuffer( analyser1 );
+    analyserView2 = new AnalyserView("view2");
+    analyserView2.initByteBuffer( analyser2 );
+	}
+
+  // Set up the vocoder chains
+  setupVocoderGraph();
+}
+
 // Initialization function for the page.
 function init() {
-	window.requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
-	window.cancelAnimationFrame = window.cancelAnimationFrame || window.webkitCancelAnimationFrame;
-	window.AudioContext = window.AudioContext || window.webkitAudioContext;
-/*	window.applicationCache.addEventListener('updateready', function(e) {
-	  	if (window.applicationCache.status == window.applicationCache.UPDATEREADY) {
-	    	// Browser downloaded a new app cache.
-		    // Swap it in and reload the page to get the new hotness.
-		    window.applicationCache.swapCache();
-	    	if (confirm('A new version of this site is available. Load it?')) {
-	      		window.location.reload();
-	    	}
-	  	} else {
-	    	// Manifest didn't changed. Nothing new to server.
-	  	}
-	}, false);
-*/
+	console.log("It's okay if the AudioContext doesn't start yet - ignore this warning.");
+  audioContext = new AudioContext();
+
+	startLoadingModulator( "audio/gettysburg.ogg" );
+	startLoadingCarrier( "audio/junky.ogg" );
+
 	document.getElementById("modpreview").addEventListener('click', previewModulator );
 	document.getElementById("liveInput").addEventListener('click', useLiveInput );
 	document.getElementById("loadcarrier").addEventListener('click', loadCarrierFile );
@@ -394,51 +411,12 @@ function init() {
 	document.getElementById("wavetable").addEventListener('click', selectWavetable );
 	document.getElementById("previewcarrier").addEventListener('click', previewCarrier );
 	document.getElementById("play").addEventListener('click', vocode );
-
 	document.getElementById("record").addEventListener('click', toggleRecording );
-
-  	try {
-    	audioContext = new AudioContext();
-  	}
-  	catch(e) {
-    	alert('The Web Audio API is apparently not supported in this browser.');
-  	}
-
 	initDragDropOfAudioFiles();	// set up panels as drop sites for audio files
-
-	generateVocoderBands( 55, 7040, cheapAnalysis ? 14 : 28 );
-
-// I used to have another debugging visualizer.
-//	outputCanvas = document.getElementById("ocanvas").getContext('2d');
 
 	vocoderCanvas = document.getElementById("vcanvas").getContext('2d');
 
-	startLoadingModulator( "audio/gettysburg.ogg" );
-	startLoadingCarrier( "audio/junky.ogg" );
-
-	// Debug visualizer
-    analyser1 = audioContext.createAnalyser();
-    analyser1.fftSize = cheapAnalysis ? 256 : 1024;
-    analyser1.smoothingTimeConstant = 0.5;
-    analyser2 = audioContext.createAnalyser();
-    analyser2.fftSize = cheapAnalysis ? 256 : 1024;
-    analyser2.smoothingTimeConstant = 0.5;
-
-    if (cheapAnalysis) {
-    	analyserView1 = document.getElementById("view1").getContext('2d');
-    	analyserView2 = document.getElementById("view2").getContext('2d');
-    } else {
-	    analyserView1 = new AnalyserView("view1");
-	    analyserView1.initByteBuffer( analyser1 );
-	    analyserView2 = new AnalyserView("view2");
-	    analyserView2.initByteBuffer( analyser2 );
-	}
-
-    // Set up the vocoder chains
-    setupVocoderGraph();
-
-
-    // hook up the UI sliders
+  // hook up the UI sliders
 	var slider = document.createElement("div");
 	slider.className="slider";
 	document.getElementById("modgaingroup").appendChild(slider);
@@ -470,18 +448,6 @@ function init() {
 	slider.units = " cents";
 }
 
-/*  TODO: re-insert analytics.
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-35593052-1']);
-  _gaq.push(['_trackPageview']);
-
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
-*/
-
 function keyevent( event ) {
 	if (event)
 		return;
@@ -492,6 +458,7 @@ var recIndex=0;
 var audioRecorder=null;
 
 function toggleRecording() {
+	initAudio(); // Make sure audioContext is started.
 	if (recording) {
         // stop recording
         audioRecorder.stop();
@@ -523,7 +490,6 @@ function doneEncoding( blob ) {
     document.getElementById("recfile").innerText = "download";
     recIndex++;
 }
-
 
 window.onload=init;
 window.onkeydown=keyevent();

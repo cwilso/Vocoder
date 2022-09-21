@@ -450,6 +450,7 @@ function createCarriersAndPlay( output ) {
 }
 
 function vocode() {
+	initAudio(); // Make sure audioContext is started.
 	if (this.event) 
 		this.event.preventDefault();
 
@@ -530,7 +531,7 @@ function createNoiseGate( connectTo ) {
     var inputNode = audioContext.createGain();
     var rectifier = audioContext.createWaveShaper();
     var ngFollower = audioContext.createBiquadFilter();
-    ngFollower.type = ngFollower.LOWPASS;
+    ngFollower.type = "lowpass";
     ngFollower.frequency.value = 10.0;
 
     var curve = new Float32Array(65536);
@@ -591,6 +592,7 @@ function gotStream(stream) {
 }
 
 function useLiveInput() {
+	initAudio(); // Make sure audioContext is started.
 	if (vocoding) {
 		if (modulatorNode)
 			modulatorNode.stop(0);
