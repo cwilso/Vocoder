@@ -4,6 +4,6 @@ This application (also shown at I/O 2012) implements a 28-band (actually variabl
 
 Check it out, feel free to submit issues or requests, fork, submit pull requests, etc.
 
-The live app is at http://webaudiodemos.appspot.com/Vocoder/index.html.
+The live app is at https://cwilso.github.io/Vocoder/.
 
 -Chris
